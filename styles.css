@@ -79,7 +79,7 @@ body {
 /* Mobile optimization */
 @media (max-width: 768px) {
   .post {
-    width: 100px;
-    height: 100px;
+    width: 33.333vw;
+    height: 33.333vw;
   }
 }
