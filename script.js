@@ -1,6 +1,6 @@
 const gallery = document.getElementById('gallery');
 const tileSize = 150;
-const bufferTiles = 3;
+const bufferTiles = 1;
 let tiles = new Map();
 
 const baseURL = 'https://dev.tinysquares.io/';
@@ -14,6 +14,8 @@ let dragStartX = 0;
 let dragStartY = 0;
 let velocityX = 0;
 let velocityY = 0;
+
+let lastMove = 0;
 
 async function loadAvailableFiles() {
   try {
@@ -33,7 +35,6 @@ function randomFile() {
     return lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.mp4');
   });
   const chosen = files.length ? files[Math.floor(Math.random() * files.length)] : '';
-  console.log('Random file chosen:', chosen);
   return chosen;
 }
 
@@ -135,6 +136,10 @@ function lazyLoadTiles() {
 }
 
 function moveCamera(dx, dy) {
+  const now = Date.now();
+  if (now - lastMove < 16) return; // throttle to ~60fps
+  lastMove = now;
+
   cameraX += dx;
   cameraY += dy;
   gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px)`;
