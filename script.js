@@ -78,16 +78,14 @@ function updateTiles() {
       neededTiles.add(key);
       if (!tiles.has(key)) {
         const fileUrl = randomFile();
-        if (fileUrl) {
-          const post = createPost(fileUrl);
-          post.style.left = `${col * tileSize}px`;
-          post.style.top = `${row * tileSize}px`;
-          gallery.appendChild(post);
-          requestAnimationFrame(() => {
-            post.classList.add('show');
-          });
-          tiles.set(key, post);
-        }
+        const post = createPost(fileUrl);
+        post.style.left = `${col * tileSize}px`;
+        post.style.top = `${row * tileSize}px`;
+        gallery.appendChild(post);
+        requestAnimationFrame(() => {
+          post.classList.add('show');
+        });
+        tiles.set(key, post);
       }
     }
   }
@@ -157,7 +155,7 @@ function animate() {
   requestAnimationFrame(animate);
 }
 
-gallery.addEventListener('mousedown', e => {
+document.addEventListener('mousedown', e => {
   isDragging = true;
   dragStartX = e.clientX;
   dragStartY = e.clientY;
@@ -181,7 +179,7 @@ document.addEventListener('mousemove', e => {
   }
 });
 
-gallery.addEventListener('touchstart', e => {
+document.addEventListener('touchstart', e => {
   e.preventDefault();
   isDragging = true;
   const touch = e.touches[0];
