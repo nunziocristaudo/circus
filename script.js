@@ -16,6 +16,8 @@ let velocityX = 0;
 let velocityY = 0;
 
 let lastMove = 0;
+let scale = 1;
+let startDistance = 0;
 
 async function loadAvailableFiles() {
   try {
@@ -140,7 +142,7 @@ function moveCamera(dx, dy) {
 
   cameraX += dx;
   cameraY += dy;
-  gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px)`;
+  gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
   updateTiles();
 }
 
@@ -192,6 +194,18 @@ document.addEventListener('touchend', () => {
 });
 
 document.addEventListener('touchmove', e => {
+  if (e.touches.length === 2) {
+    e.preventDefault();
+    const currentDistance = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    const zoomFactor = currentDistance / startDistance;
+    scale = Math.min(Math.max(0.5, scale * zoomFactor), 3);
+    gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
+    startDistance = currentDistance;
+    return;
+  }
   if (isDragging) {
     e.preventDefault();
     const touch = e.touches[0];
@@ -210,6 +224,14 @@ window.addEventListener('wheel', e => {
 });
 
 window.addEventListener('keydown', e => {
+  if (e.key === '+') {
+    scale = Math.min(scale + 0.1, 3);
+    gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
+  }
+  if (e.key === '-') {
+    scale = Math.max(scale - 0.1, 0.5);
+    gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
+  }
   const speed = 20;
   if (e.key === 'ArrowUp') moveCamera(0, -speed);
   if (e.key === 'ArrowDown') moveCamera(0, speed);
@@ -226,7 +248,7 @@ async function init() {
   document.getElementById('loader').style.display = 'none';
   cameraX = 0;
   cameraY = 0;
-  gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px)`;
+  gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
   updateTiles();
   animate();
 }
