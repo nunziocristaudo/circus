@@ -1,3 +1,4 @@
+
 const gallery = document.getElementById('gallery');
 let tileSize = 150;
 const bufferTiles = 2;
@@ -193,12 +194,22 @@ document.addEventListener('touchmove', e => {
   }
   if (e.touches.length === 2) {
     e.preventDefault();
+    const zoomCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+    const zoomCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+    const worldX = (zoomCenterX / scale) + cameraX;
+    const worldY = (zoomCenterY / scale) + cameraY;
+
     const currentDistance = Math.hypot(
       e.touches[0].clientX - e.touches[1].clientX,
       e.touches[0].clientY - e.touches[1].clientY
     );
+
     const zoomFactor = currentDistance / startDistance;
     scale = Math.min(Math.max(0.5, scale * zoomFactor), 3);
+
+    cameraX = worldX - (zoomCenterX / scale);
+    cameraY = worldY - (zoomCenterY / scale);
+
     gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
     startDistance = currentDistance;
   }
@@ -211,8 +222,24 @@ document.addEventListener('touchend', e => {
 });
 
 window.addEventListener('wheel', e => {
-  moveCamera(e.deltaX, e.deltaY);
-});
+  if (e.ctrlKey) {
+    e.preventDefault();
+    const zoomCenterX = e.clientX;
+    const zoomCenterY = e.clientY;
+    const worldX = (zoomCenterX / scale) + cameraX;
+    const worldY = (zoomCenterY / scale) + cameraY;
+
+    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+    scale = Math.min(Math.max(0.5, scale * zoomFactor), 3);
+
+    cameraX = worldX - (zoomCenterX / scale);
+    cameraY = worldY - (zoomCenterY / scale);
+
+    gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
+  } else {
+    moveCamera(e.deltaX, e.deltaY);
+  }
+}, { passive: false });
 
 window.addEventListener('keydown', e => {
   if (e.key === '+') {
@@ -238,5 +265,4 @@ async function init() {
   updateTiles();
   animate();
 }
-
 init();
