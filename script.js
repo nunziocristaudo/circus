@@ -137,7 +137,7 @@ function lazyLoadTiles() {
 
 function moveCamera(dx, dy) {
   const now = Date.now();
-  if (now - lastMove < 16) return; // throttle to ~60fps
+  if (now - lastMove < 16) return;
   lastMove = now;
 
   cameraX += dx;
@@ -182,6 +182,7 @@ document.addEventListener('mousemove', e => {
 });
 
 gallery.addEventListener('touchstart', e => {
+  e.preventDefault();
   isDragging = true;
   const touch = e.touches[0];
   dragStartX = touch.clientX;
@@ -194,6 +195,7 @@ document.addEventListener('touchend', () => {
 
 document.addEventListener('touchmove', e => {
   if (isDragging) {
+    e.preventDefault();
     const touch = e.touches[0];
     const dx = touch.clientX - dragStartX;
     const dy = touch.clientY - dragStartY;
