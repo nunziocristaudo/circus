@@ -1,6 +1,6 @@
 const gallery = document.getElementById('gallery');
-const tileSize = 150;
-const bufferTiles = 1;
+let tileSize = 150;
+const bufferTiles = 2;
 let tiles = new Map();
 
 const baseURL = 'https://dev.tinysquares.io/';
@@ -15,9 +15,7 @@ let dragStartY = 0;
 let velocityX = 0;
 let velocityY = 0;
 
-let lastMove = 0;
 let scale = 1;
-let zoomLevel = 1;
 let startDistance = 0;
 
 async function loadAvailableFiles() {
@@ -25,7 +23,6 @@ async function loadAvailableFiles() {
     const response = await fetch(workerURL);
     const filenames = await response.json();
     window.availableFiles = filenames.map(name => baseURL + encodeURIComponent(name));
-    console.log('Loaded files:', window.availableFiles);
   } catch (error) {
     console.error('Failed to load available files', error);
     window.availableFiles = [];
@@ -37,16 +34,14 @@ function randomFile() {
     const lower = file.toLowerCase();
     return lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.mp4');
   });
-  const chosen = files.length ? files[Math.floor(Math.random() * files.length)] : '';
-  return chosen;
+  return files.length ? files[Math.floor(Math.random() * files.length)] : '';
 }
 
 function createPost(fileUrl) {
-  const lowerUrl = fileUrl.toLowerCase();
   const frame = document.createElement('div');
   frame.className = 'frame';
   let media;
-  if (lowerUrl.includes('.mp4') || lowerUrl.includes('.mov')) {
+  if (fileUrl.toLowerCase().includes('.mp4') || fileUrl.toLowerCase().includes('.mov')) {
     media = document.createElement('video');
     media.muted = true;
     media.loop = true;
@@ -65,8 +60,8 @@ function createPost(fileUrl) {
 }
 
 function updateTiles() {
-  const viewWidth = window.innerWidth;
-  const viewHeight = window.innerHeight;
+  const viewWidth = window.innerWidth / scale;
+  const viewHeight = window.innerHeight / scale;
 
   const startCol = Math.floor((cameraX - bufferTiles * tileSize) / tileSize);
   const endCol = Math.ceil((cameraX + viewWidth + bufferTiles * tileSize) / tileSize);
@@ -81,14 +76,14 @@ function updateTiles() {
       neededTiles.add(key);
       if (!tiles.has(key)) {
         const fileUrl = randomFile();
-        const post = createPost(fileUrl);
-        post.style.left = `${col * tileSize}px`;
-        post.style.top = `${row * tileSize}px`;
-        gallery.appendChild(post);
-        requestAnimationFrame(() => {
-          post.classList.add('show');
-        });
-        tiles.set(key, post);
+        if (fileUrl) {
+          const post = createPost(fileUrl);
+          post.style.left = `${col * tileSize}px`;
+          post.style.top = `${row * tileSize}px`;
+          gallery.appendChild(post);
+          requestAnimationFrame(() => post.classList.add('show'));
+          tiles.set(key, post);
+        }
       }
     }
   }
@@ -107,24 +102,15 @@ function lazyLoadTiles() {
   tiles.forEach(tile => {
     const media = tile.querySelector('img, video');
     const rect = tile.getBoundingClientRect();
-    if (
-      rect.right >= 0 &&
-      rect.left <= window.innerWidth &&
-      rect.bottom >= 0 &&
-      rect.top <= window.innerHeight
-    ) {
-      if (media.tagName === 'IMG') {
-        if (!media.src) {
-          media.src = media.dataset.src;
-        }
-      } else if (media.tagName === 'VIDEO') {
-        if (media.children.length === 0) {
-          const source = document.createElement('source');
-          source.src = media.dataset.src;
-          source.type = 'video/mp4';
-          media.appendChild(source);
-          media.load();
-        }
+    if (rect.right >= 0 && rect.left <= window.innerWidth && rect.bottom >= 0 && rect.top <= window.innerHeight) {
+      if (media.tagName === 'IMG' && !media.src) {
+        media.src = media.dataset.src;
+      } else if (media.tagName === 'VIDEO' && media.children.length === 0) {
+        const source = document.createElement('source');
+        source.src = media.dataset.src;
+        source.type = 'video/mp4';
+        media.appendChild(source);
+        media.load();
       }
     } else {
       if (media.tagName === 'IMG') {
@@ -137,12 +123,8 @@ function lazyLoadTiles() {
 }
 
 function moveCamera(dx, dy) {
-  const now = Date.now();
-  if (now - lastMove < 16) return;
-  lastMove = now;
-
-  cameraX += dx;
-  cameraY += dy;
+  cameraX += dx / scale;
+  cameraY += dy / scale;
   gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
   updateTiles();
 }
@@ -183,34 +165,23 @@ document.addEventListener('mousemove', e => {
 });
 
 document.addEventListener('touchstart', e => {
-  e.preventDefault();
-  isDragging = true;
-  const touch = e.touches[0];
-  dragStartX = touch.clientX;
-  dragStartY = touch.clientY;
-});
-
-document.addEventListener('touchend', () => {
-  isDragging = false;
-});
-
-document.addEventListener('touchmove', e => {
+  if (e.touches.length === 1) {
+    isDragging = true;
+    const touch = e.touches[0];
+    dragStartX = touch.clientX;
+    dragStartY = touch.clientY;
+  }
   if (e.touches.length === 2) {
     e.preventDefault();
-    const currentDistance = Math.hypot(
+    startDistance = Math.hypot(
       e.touches[0].clientX - e.touches[1].clientX,
       e.touches[0].clientY - e.touches[1].clientY
     );
-    const zoomFactor = currentDistance / startDistance;
-    zoomLevel = Math.min(Math.max(0.5, zoomLevel * zoomFactor), 3);
-tileSize = Math.round(150 * zoomLevel);
-updateTiles();
-    gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
-    startDistance = currentDistance;
-    return;
   }
-  if (isDragging) {
-    e.preventDefault();
+}, { passive: false });
+
+document.addEventListener('touchmove', e => {
+  if (e.touches.length === 1 && isDragging) {
     const touch = e.touches[0];
     const dx = touch.clientX - dragStartX;
     const dy = touch.clientY - dragStartY;
@@ -220,6 +191,23 @@ updateTiles();
     dragStartX = touch.clientX;
     dragStartY = touch.clientY;
   }
+  if (e.touches.length === 2) {
+    e.preventDefault();
+    const currentDistance = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    const zoomFactor = currentDistance / startDistance;
+    scale = Math.min(Math.max(0.5, scale * zoomFactor), 3);
+    gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
+    startDistance = currentDistance;
+  }
+}, { passive: false });
+
+document.addEventListener('touchend', e => {
+  if (e.touches.length === 0) {
+    isDragging = false;
+  }
 });
 
 window.addEventListener('wheel', e => {
@@ -228,22 +216,13 @@ window.addEventListener('wheel', e => {
 
 window.addEventListener('keydown', e => {
   if (e.key === '+') {
-    zoomLevel = Math.min(3, zoomLevel + 0.1);
-tileSize = Math.round(150 * zoomLevel);
-updateTiles();
+    scale = Math.min(3, scale + 0.1);
     gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
   }
   if (e.key === '-') {
-    zoomLevel = Math.max(0.5, zoomLevel - 0.1);
-tileSize = Math.round(150 * zoomLevel);
-updateTiles();
+    scale = Math.max(0.5, scale - 0.1);
     gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
   }
-  const speed = 20;
-  if (e.key === 'ArrowUp') moveCamera(0, -speed);
-  if (e.key === 'ArrowDown') moveCamera(0, speed);
-  if (e.key === 'ArrowLeft') moveCamera(-speed, 0);
-  if (e.key === 'ArrowRight') moveCamera(speed, 0);
 });
 
 async function init() {
@@ -259,4 +238,5 @@ async function init() {
   updateTiles();
   animate();
 }
+
 init();
