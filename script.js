@@ -1,7 +1,6 @@
-
 const gallery = document.getElementById('gallery');
 let tileSize = 150;
-const bufferTiles = scale > 1.5 ? 4 : 2;
+const bufferTiles = 2;
 let tiles = new Map();
 
 const baseURL = 'https://dev.tinysquares.io/';
@@ -61,6 +60,7 @@ function createPost(fileUrl) {
 }
 
 function updateTiles() {
+  const bufferTiles = scale > 1.5 ? 4 : 2;
   const viewWidth = window.innerWidth / scale;
   const viewHeight = window.innerHeight / scale;
 
