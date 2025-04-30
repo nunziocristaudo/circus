@@ -1,7 +1,7 @@
 
 const gallery = document.getElementById('gallery');
 let tileSize = 150;
-const bufferTiles = 2;
+const bufferTiles = scale > 1.5 ? 4 : 2;
 let tiles = new Map();
 
 const baseURL = 'https://dev.tinysquares.io/';
@@ -192,24 +192,31 @@ document.addEventListener('touchmove', e => {
     dragStartX = touch.clientX;
     dragStartY = touch.clientY;
   }
+
   if (e.touches.length === 2) {
     e.preventDefault();
-    const zoomCenterX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-    const zoomCenterY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+
+    const touch1 = e.touches[0];
+    const touch2 = e.touches[1];
+    const zoomCenterX = (touch1.clientX + touch2.clientX) / 2;
+    const zoomCenterY = (touch1.clientY + touch2.clientY) / 2;
+
     const worldX = (zoomCenterX / scale) + cameraX;
     const worldY = (zoomCenterY / scale) + cameraY;
 
     const currentDistance = Math.hypot(
-      e.touches[0].clientX - e.touches[1].clientX,
-      e.touches[0].clientY - e.touches[1].clientY
+      touch1.clientX - touch2.clientX,
+      touch1.clientY - touch2.clientY
     );
 
     const zoomFactor = currentDistance / startDistance;
-    scale = Math.min(Math.max(0.5, scale * zoomFactor), 3);
+    const newScale = Math.min(Math.max(0.5, scale * zoomFactor), 3);
 
-    cameraX = worldX - (zoomCenterX / scale);
-    cameraY = worldY - (zoomCenterY / scale);
+    // Adjust camera so the zoom center stays locked
+    cameraX = worldX - (zoomCenterX / newScale);
+    cameraY = worldY - (zoomCenterY / newScale);
 
+    scale = newScale;
     gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
     startDistance = currentDistance;
   }
@@ -224,16 +231,18 @@ document.addEventListener('touchend', e => {
 window.addEventListener('wheel', e => {
   if (e.ctrlKey) {
     e.preventDefault();
+
     const zoomCenterX = e.clientX;
     const zoomCenterY = e.clientY;
     const worldX = (zoomCenterX / scale) + cameraX;
     const worldY = (zoomCenterY / scale) + cameraY;
 
     const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-    scale = Math.min(Math.max(0.5, scale * zoomFactor), 3);
+    const newScale = Math.min(Math.max(0.5, scale * zoomFactor), 3);
 
-    cameraX = worldX - (zoomCenterX / scale);
-    cameraY = worldY - (zoomCenterY / scale);
+    cameraX = worldX - (zoomCenterX / newScale);
+    cameraY = worldY - (zoomCenterY / newScale);
+    scale = newScale;
 
     gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
   } else {
