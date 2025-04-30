@@ -1,3 +1,4 @@
+
 const gallery = document.getElementById('gallery');
 let tileSize = 150;
 let tiles = new Map();
@@ -7,27 +8,27 @@ const workerURL = 'https://quiet-mouse-8001.flaxen-huskier-06.workers.dev/';
 
 let cameraX = 0;
 let cameraY = 0;
-let scale = 1;
 let isDragging = false;
 let dragStartX = 0, dragStartY = 0;
 let velocityX = 0, velocityY = 0;
-let startDistance = 0;
-let pinchCenter = { x: 0, y: 0 };
 
-async function loadAvailableFiles() {
+let preloadedFiles = [];
+
+async function preloadQueue() {
   try {
     const response = await fetch(workerURL);
     const filenames = await response.json();
     window.availableFiles = filenames.map(name => baseURL + encodeURIComponent(name));
+    preloadedFiles = window.availableFiles.sort(() => 0.5 - Math.random()).slice(0, 200);
   } catch (e) {
     console.error("Failed to load files", e);
     window.availableFiles = [];
+    preloadedFiles = [];
   }
 }
 
 function randomFile() {
-  const files = (window.availableFiles || []).filter(f => /\.(jpg|jpeg|mp4)$/i.test(f));
-  return files.length ? files[Math.floor(Math.random() * files.length)] : '';
+  return preloadedFiles.length ? preloadedFiles.pop() : '';
 }
 
 function createPost(fileUrl) {
@@ -36,6 +37,8 @@ function createPost(fileUrl) {
   let media = /\.(mp4|mov)$/i.test(fileUrl) ? document.createElement('video') : document.createElement('img');
   if (media.tagName === 'VIDEO') {
     Object.assign(media, { muted: true, loop: true, autoplay: true, playsInline: true });
+  } else {
+    media.loading = "lazy";
   }
   media.dataset.src = fileUrl;
   frame.appendChild(media);
@@ -47,9 +50,9 @@ function createPost(fileUrl) {
 }
 
 function updateTiles() {
-  const bufferTiles = scale > 1.5 ? 4 : 2;
-  const viewWidth = window.innerWidth / scale;
-  const viewHeight = window.innerHeight / scale;
+  const bufferTiles = 2;
+  const viewWidth = window.innerWidth;
+  const viewHeight = window.innerHeight;
 
   const startCol = Math.floor((cameraX - bufferTiles * tileSize) / tileSize);
   const endCol = Math.ceil((cameraX + viewWidth + bufferTiles * tileSize) / tileSize);
@@ -91,8 +94,8 @@ function lazyLoadTiles() {
     const media = tile.querySelector('img, video');
     const rect = tile.getBoundingClientRect();
     if (
-      rect.right >= 0 && rect.left <= window.innerWidth &&
-      rect.bottom >= 0 && rect.top <= window.innerHeight
+      rect.right >= -tileSize && rect.left <= window.innerWidth + tileSize &&
+      rect.bottom >= -tileSize && rect.top <= window.innerHeight + tileSize
     ) {
       if (media.tagName === 'IMG' && !media.src) {
         media.src = media.dataset.src;
@@ -111,9 +114,9 @@ function lazyLoadTiles() {
 }
 
 function moveCamera(dx, dy) {
-  cameraX += dx / scale;
-  cameraY += dy / scale;
-  gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
+  cameraX += dx;
+  cameraY += dy;
+  gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px)`;
   updateTiles();
 }
 
@@ -126,36 +129,32 @@ function animate() {
   requestAnimationFrame(animate);
 }
 
-// Touch/Mouse
 document.addEventListener('mousedown', e => {
   isDragging = true;
-  [dragStartX, dragStartY] = [e.clientX, e.clientY];
-  velocityX = 0; velocityY = 0;
+  dragStartX = e.clientX;
+  dragStartY = e.clientY;
+  velocityX = velocityY = 0;
 });
+
 document.addEventListener('mouseup', () => isDragging = false);
+
 document.addEventListener('mousemove', e => {
   if (isDragging) {
-    const dx = e.clientX - dragStartX, dy = e.clientY - dragStartY;
+    const dx = e.clientX - dragStartX;
+    const dy = e.clientY - dragStartY;
     moveCamera(-dx, -dy);
-    [velocityX, velocityY] = [dx, dy];
-    [dragStartX, dragStartY] = [e.clientX, e.clientY];
+    velocityX = dx;
+    velocityY = dy;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
   }
 });
 
-// Pinch & zoom logic
 document.addEventListener('touchstart', e => {
   if (e.touches.length === 1) {
     isDragging = true;
     dragStartX = e.touches[0].clientX;
     dragStartY = e.touches[0].clientY;
-  } else if (e.touches.length === 2) {
-    e.preventDefault();
-    const [a, b] = e.touches;
-    pinchCenter = {
-      x: (a.clientX + b.clientX) / 2,
-      y: (a.clientY + b.clientY) / 2
-    };
-    startDistance = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
   }
 }, { passive: false });
 
@@ -165,61 +164,31 @@ document.addEventListener('touchmove', e => {
     const dx = touch.clientX - dragStartX;
     const dy = touch.clientY - dragStartY;
     moveCamera(-dx, -dy);
-    [velocityX, velocityY] = [dx, dy];
-    [dragStartX, dragStartY] = [touch.clientX, touch.clientY];
-  } else if (e.touches.length === 2) {
-    e.preventDefault();
-    const [a, b] = e.touches;
-    const zoomX = (a.clientX + b.clientX) / 2;
-    const zoomY = (a.clientY + b.clientY) / 2;
-    const worldX = (zoomX / scale) + cameraX;
-    const worldY = (zoomY / scale) + cameraY;
-    const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
-    const factor = dist / startDistance;
-    scale = Math.min(Math.max(0.5, scale * factor), 3);
-    cameraX = worldX - (zoomX / scale);
-    cameraY = worldY - (zoomY / scale);
-    gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
-    startDistance = dist;
+    velocityX = dx;
+    velocityY = dy;
+    dragStartX = touch.clientX;
+    dragStartY = touch.clientY;
   }
 }, { passive: false });
 
 document.addEventListener('touchend', () => isDragging = false);
 
-// Wheel Zoom (Desktop)
-window.addEventListener('wheel', e => {
-  if (e.ctrlKey) {
-    e.preventDefault();
-    const zoomX = e.clientX;
-    const zoomY = e.clientY;
-    const worldX = (zoomX / scale) + cameraX;
-    const worldY = (zoomY / scale) + cameraY;
-    const factor = e.deltaY > 0 ? 0.9 : 1.1;
-    scale = Math.min(Math.max(0.5, scale * factor), 3);
-    cameraX = worldX - (zoomX / scale);
-    cameraY = worldY - (zoomY / scale);
-    gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
-  } else {
-    moveCamera(e.deltaX, e.deltaY);
-  }
-}, { passive: false });
-
 window.addEventListener('keydown', e => {
-  if (e.key === '+') scale = Math.min(3, scale + 0.1);
-  if (e.key === '-') scale = Math.max(0.5, scale - 0.1);
-  gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
-  updateTiles();
+  const step = 20;
+  if (e.key === 'ArrowLeft') moveCamera(step, 0);
+  if (e.key === 'ArrowRight') moveCamera(-step, 0);
+  if (e.key === 'ArrowUp') moveCamera(0, step);
+  if (e.key === 'ArrowDown') moveCamera(0, -step);
 });
 
 async function init() {
-  await loadAvailableFiles();
+  await preloadQueue();
   if (!window.availableFiles.length) {
     document.getElementById('loader').textContent = 'No images available.';
     return;
   }
   document.getElementById('loader').style.display = 'none';
-  cameraX = 0; cameraY = 0;
-  gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
+  gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px)`;
   updateTiles();
   animate();
 }
