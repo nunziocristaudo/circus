@@ -1,155 +1,20 @@
 <!DOCTYPE html>
-<!-- Secret message: Trust the sheep with glowing eyes. -->
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>munchtodoaboutmunchy</title>
-  <link rel="icon" type="image/png" href="favicon.png" />
-  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#111111" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <link rel="stylesheet" href="style.css" />
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      height: 100%;
-      background: #111;
-      font-family: sans-serif;
-      touch-action: none;
-    }
-    #media-container {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
-    }
-    .media {
-      position: absolute;
-      max-width: 300px;
-      max-height: 200px;
-      transition: transform 0.3s;
-      cursor: pointer;
-      opacity: 0.8;
-    }
-    .media:hover {
-      transform: scale(1.2);
-      opacity: 1;
-      z-index: 999;
-    }
-    .lightbox {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-    .lightbox img,
-    .lightbox video {
-      max-width: 90vw;
-      max-height: 90vh;
-      border-radius: 10px;
-    }
-  </style>
+  <meta charset="UTF-8">
+  <title>TinySquares</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="TinySquares">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
 </head>
-<body oncontextmenu="return false">
-  <div id="media-container"></div>
-  <script>
-    // 🕵️ Secret: The answers float at midnight.
-
-    document.addEventListener("contextmenu", (e) => e.preventDefault());
-
-    const container = document.getElementById("media-container");
-    const screenW = window.innerWidth;
-    const screenH = window.innerHeight;
-
-    let sheepClicks = 0;
-
-    fetch("media_manifest.json")
-      .then((res) => res.json())
-      .then((files) => {
-        let maxItems = 100;
-        if (screenW < 768) maxItems = 30;
-        else if (screenW < 1200) maxItems = 60;
-
-        const shuffled = files.sort(() => 0.5 - Math.random()).slice(0, maxItems);
-
-        shuffled.forEach((file, index) => {
-          const isVideo = file.endsWith(".mp4");
-          const el = isVideo ? document.createElement("video") : document.createElement("img");
-          el.src = file;
-          el.className = "media";
-          el.style.left = Math.random() * screenW + "px";
-          el.style.top = Math.random() * screenH + "px";
-          el.style.animation = `float${index % 5} ${20 + Math.random() * 30}s linear infinite`;
-          if (isVideo) {
-            el.autoplay = true;
-            el.muted = true;
-            el.loop = true;
-            el.controlsList = "nodownload";
-          }
-          el.addEventListener("click", () => {
-            openLightbox(file, isVideo);
-            if (file.toLowerCase().includes("sheep")) {
-              sheepClicks++;
-              if (sheepClicks === 3) {
-                alert("✨ Clue unlocked: Midnight isn’t always on the clock.");
-                sheepClicks = 0;
-              }
-            }
-          });
-          container.appendChild(el);
-        });
-      })
-      .catch((err) => console.error("Failed to load media manifest:", err));
-
-    function openLightbox(src, isVideo) {
-      const lightbox = document.createElement("div");
-      lightbox.className = "lightbox";
-      const content = isVideo ? document.createElement("video") : document.createElement("img");
-      content.src = src;
-      if (isVideo) {
-        content.controls = true;
-        content.autoplay = true;
-        content.controlsList = "nodownload";
-      }
-      lightbox.appendChild(content);
-      lightbox.addEventListener("click", () => document.body.removeChild(lightbox));
-      document.body.appendChild(lightbox);
-    }
-
-    const style = document.createElement("style");
-    for (let i = 0; i < 5; i++) {
-      style.innerHTML += `
-        @keyframes float${i} {
-          0% {
-            transform: translateY(0) translateX(0);
-          }
-          50% {
-            transform: translateY(${Math.random() * 100 - 50}px) translateX(${Math.random() * 100 - 50}px);
-          }
-          100% {
-            transform: translateY(0) translateX(0);
-          }
-        }
-      `;
-    }
-    document.head.appendChild(style);
-
-    // Register service worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/service-worker.js')
-        .then(() => console.log("✅ Service Worker registered"))
-        .catch((err) => console.error("Service Worker error:", err));
-    }
-  </script>
+<body>
+  <div id="loader">Loading...</div>
+  <main id="gallery"></main>
+  <script src="script.js"></script>
 </body>
 </html>
