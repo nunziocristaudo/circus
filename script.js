@@ -1,6 +1,6 @@
 const gallery = document.getElementById('gallery');
 let tileSize = 150;
-bufferTiles = scale > 1.5 ? 4 : 2;
+const bufferTiles = 2;
 let tiles = new Map();
 
 const baseURL = 'https://dev.tinysquares.io/';
@@ -60,6 +60,7 @@ function createPost(fileUrl) {
 }
 
 function updateTiles() {
+  const bufferTiles = scale > 1.5 ? 4 : 2;
   const viewWidth = window.innerWidth / scale;
   const viewHeight = window.innerHeight / scale;
 
@@ -72,14 +73,14 @@ function updateTiles() {
 
   for (let row = startRow; row <= endRow; row++) {
     for (let col = startCol; col <= endCol; col++) {
-      const key = ${col},${row};
+      const key = `${col},${row}`;
       neededTiles.add(key);
       if (!tiles.has(key)) {
         const fileUrl = randomFile();
         if (fileUrl) {
           const post = createPost(fileUrl);
-          post.style.left = ${col * tileSize}px;
-          post.style.top = ${row * tileSize}px;
+          post.style.left = `${col * tileSize}px`;
+          post.style.top = `${row * tileSize}px`;
           gallery.appendChild(post);
           requestAnimationFrame(() => post.classList.add('show'));
           tiles.set(key, post);
@@ -125,7 +126,7 @@ function lazyLoadTiles() {
 function moveCamera(dx, dy) {
   cameraX += dx / scale;
   cameraY += dy / scale;
-  gallery.style.transform = translate(${-cameraX}px, ${-cameraY}px) scale(${scale});
+  gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
   updateTiles();
 }
 
@@ -209,7 +210,7 @@ document.addEventListener('touchmove', e => {
     cameraX = worldX - (zoomCenterX / scale);
     cameraY = worldY - (zoomCenterY / scale);
 
-    gallery.style.transform = translate(${-cameraX}px, ${-cameraY}px) scale(${scale});
+    gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
     startDistance = currentDistance;
   }
 }, { passive: false });
@@ -234,7 +235,7 @@ window.addEventListener('wheel', e => {
     cameraX = worldX - (zoomCenterX / scale);
     cameraY = worldY - (zoomCenterY / scale);
 
-    gallery.style.transform = translate(${-cameraX}px, ${-cameraY}px) scale(${scale});
+    gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
   } else {
     moveCamera(e.deltaX, e.deltaY);
   }
@@ -243,11 +244,11 @@ window.addEventListener('wheel', e => {
 window.addEventListener('keydown', e => {
   if (e.key === '+') {
     scale = Math.min(3, scale + 0.1);
-    gallery.style.transform = translate(${-cameraX}px, ${-cameraY}px) scale(${scale});
+    gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
   }
   if (e.key === '-') {
     scale = Math.max(0.5, scale - 0.1);
-    gallery.style.transform = translate(${-cameraX}px, ${-cameraY}px) scale(${scale});
+    gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
   }
 });
 
@@ -260,7 +261,7 @@ async function init() {
   document.getElementById('loader').style.display = 'none';
   cameraX = 0;
   cameraY = 0;
-  gallery.style.transform = translate(${-cameraX}px, ${-cameraY}px) scale(${scale});
+  gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${scale})`;
   updateTiles();
   animate();
 }
