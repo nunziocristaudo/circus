@@ -1,266 +1,126 @@
 const gallery = document.getElementById('gallery');
-const tileSize = 150;
-const bufferTiles = 1;
-let tiles = new Map();
+const loader = document.getElementById('loader');
 
 const baseURL = 'https://dev.tinysquares.io/';
 const workerURL = 'https://quiet-mouse-8001.flaxen-huskier-06.workers.dev/';
 
-let cameraX = 0;
-let cameraY = 0;
-
+let scale = 1;
+let origin = { x: 0, y: 0 };
 let isDragging = false;
-let dragStartX = 0;
-let dragStartY = 0;
-let velocityX = 0;
-let velocityY = 0;
+let start = { x: 0, y: 0 };
 
-let lastMove = 0;
-
-async function loadAvailableFiles() {
-  try {
-    const response = await fetch(workerURL);
-    const filenames = await response.json();
-    window.availableFiles = filenames.map(name => baseURL + encodeURIComponent(name));
-    console.log('Loaded files:', window.availableFiles);
-  } catch (error) {
-    console.error('Failed to load available files', error);
-    window.availableFiles = [];
-  }
+function setTransform() {
+  gallery.style.transform = `translate(${origin.x}px, ${origin.y}px) scale(${scale})`;
 }
 
-function randomFile() {
-  const files = (window.availableFiles || []).filter(file => {
-    const lower = file.toLowerCase();
-    return lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.mp4');
-  });
-  const chosen = files.length ? files[Math.floor(Math.random() * files.length)] : '';
-  return chosen;
-}
+function loadImages() {
+  fetch(workerURL)
+    .then(res => res.json())
+    .then(images => {
+      images.forEach((filename, index) => {
+        const post = document.createElement('div');
+        post.className = 'post fade-in';
+        post.style.left = `${(index % 10) * 160}px`;
+        post.style.top = `${Math.floor(index / 10) * 160}px`;
 
- else {
-    media = document.createElement('img');
-  }
-  media.dataset.src = fileUrl;
-  frame.appendChild(media);
+        const frame = document.createElement('div');
+        frame.className = 'frame';
 
-  const post = document.createElement('div');
-  post.className = 'post fade-in';
-  post.appendChild(frame);
-  return post;
-}
+        if (filename.endsWith('.mp4')) {
+          const video = document.createElement('video');
+          video.src = baseURL + filename;
+          video.autoplay = true;
+          video.loop = true;
+          video.muted = true;
+          frame.appendChild(video);
+        } else {
+          const img = document.createElement('img');
+          img.src = baseURL + filename;
+          frame.appendChild(img);
+        }
 
-function updateTiles() {
-  const viewWidth = window.innerWidth;
-  const viewHeight = window.innerHeight;
-
-  const startCol = Math.floor((cameraX - bufferTiles * tileSize) / tileSize);
-  const endCol = Math.ceil((cameraX + viewWidth + bufferTiles * tileSize) / tileSize);
-  const startRow = Math.floor((cameraY - bufferTiles * tileSize) / tileSize);
-  const endRow = Math.ceil((cameraY + viewHeight + bufferTiles * tileSize) / tileSize);
-
-  const neededTiles = new Set();
-
-  for (let row = startRow; row <= endRow; row++) {
-    for (let col = startCol; col <= endCol; col++) {
-      const key = `${col},${row}`;
-      neededTiles.add(key);
-      if (!tiles.has(key)) {
-        const fileUrl = randomFile();
-        const post = createPost(fileUrl);
-        post.style.left = `${col * tileSize}px`;
-        post.style.top = `${row * tileSize}px`;
+        post.appendChild(frame);
         gallery.appendChild(post);
-        requestAnimationFrame(() => {
+
+        setTimeout(() => {
           post.classList.add('show');
-        });
-        tiles.set(key, post);
-      }
-    }
-  }
-
-  for (const [key, tile] of tiles) {
-    if (!neededTiles.has(key)) {
-      gallery.removeChild(tile);
-      tiles.delete(key);
-    }
-  }
-
-  lazyLoadTiles();
+        }, 30 * index);
+      });
+    })
+    .finally(() => loader.style.display = 'none');
 }
 
-function lazyLoadTiles() {
-  tiles.forEach(tile => {
-    const media = tile.querySelector('img, video');
-    const rect = tile.getBoundingClientRect();
-    if (
-      rect.right >= 0 &&
-      rect.left <= window.innerWidth &&
-      rect.bottom >= 0 &&
-      rect.top <= window.innerHeight
-    ) {
-      if (media.tagName === 'IMG') {
-        if (!media.src) {
-          media.src = media.dataset.src;
-        }
-      } else if (media.tagName === 'VIDEO') {
-        if (media.children.length === 0) {
-          const source = document.createElement('source');
-          source.src = media.dataset.src;
-          source.type = 'video/mp4';
-          media.appendChild(source);
-          media.load();
-        }
-      }
-    } else {
-      if (media.tagName === 'IMG') {
-        media.removeAttribute('src');
-      } else if (media.tagName === 'VIDEO') {
-        media.innerHTML = '';
-      }
-    }
+function handlePointerEvents() {
+  gallery.addEventListener('pointerdown', (e) => {
+    isDragging = true;
+    start = { x: e.clientX - origin.x, y: e.clientY - origin.y };
+    gallery.style.cursor = 'grabbing';
+  });
+
+  gallery.addEventListener('pointermove', (e) => {
+    if (!isDragging) return;
+    origin.x = e.clientX - start.x;
+    origin.y = e.clientY - start.y;
+    setTransform();
+  });
+
+  gallery.addEventListener('pointerup', () => {
+    isDragging = false;
+    gallery.style.cursor = 'grab';
+  });
+
+  gallery.addEventListener('pointerleave', () => {
+    isDragging = false;
+    gallery.style.cursor = 'grab';
   });
 }
 
-function moveCamera(dx, dy) {
-  const now = Date.now();
-  if (now - lastMove < 16) return;
-  lastMove = now;
-
-  cameraX += dx;
-  cameraY += dy;
-  gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px)`;
-  updateTiles();
-}
-
-function animate() {
-  if (!isDragging) {
-    if (Math.abs(velocityX) > 0.1 || Math.abs(velocityY) > 0.1) {
-      moveCamera(-velocityX, -velocityY);
-      velocityX *= 0.95;
-      velocityY *= 0.95;
+function handleKeyboardNavigation() {
+  window.addEventListener('keydown', (e) => {
+    const step = 50;
+    switch (e.key) {
+      case 'ArrowUp':
+        origin.y += step;
+        break;
+      case 'ArrowDown':
+        origin.y -= step;
+        break;
+      case 'ArrowLeft':
+        origin.x += step;
+        break;
+      case 'ArrowRight':
+        origin.x -= step;
+        break;
+      default:
+        return;
     }
-  }
-  requestAnimationFrame(animate);
+    setTransform();
+  });
 }
 
-document.addEventListener('mousedown', e => {
-  isDragging = true;
-  dragStartX = e.clientX;
-  dragStartY = e.clientY;
-  velocityX = 0;
-  velocityY = 0;
-});
+function handleMouseWheelZoom() {
+  window.addEventListener('wheel', (e) => {
+    if (!e.ctrlKey) return;
 
-document.addEventListener('mouseup', () => {
-  isDragging = false;
-});
-
-document.addEventListener('mousemove', e => {
-  if (isDragging) {
-    const dx = e.clientX - dragStartX;
-    const dy = e.clientY - dragStartY;
-    moveCamera(-dx, -dy);
-    velocityX = dx;
-    velocityY = dy;
-    dragStartX = e.clientX;
-    dragStartY = e.clientY;
-  }
-});
-
-document.addEventListener('touchstart', e => {
-  e.preventDefault();
-  isDragging = true;
-  const touch = e.touches[0];
-  dragStartX = touch.clientX;
-  dragStartY = touch.clientY;
-});
-
-document.addEventListener('touchend', () => {
-  isDragging = false;
-});
-
-document.addEventListener('touchmove', e => {
-  if (isDragging) {
     e.preventDefault();
-    const touch = e.touches[0];
-    const dx = touch.clientX - dragStartX;
-    const dy = touch.clientY - dragStartY;
-    moveCamera(-dx, -dy);
-    velocityX = dx;
-    velocityY = dy;
-    dragStartX = touch.clientX;
-    dragStartY = touch.clientY;
-  }
-});
+    const zoomFactor = 0.1;
+    const direction = e.deltaY > 0 ? -1 : 1;
+    const newScale = Math.min(5, Math.max(0.2, scale + zoomFactor * direction));
 
-window.addEventListener('wheel', e => {
-  moveCamera(e.deltaX, e.deltaY);
-});
+    // Zoom centered on cursor
+    const rect = gallery.getBoundingClientRect();
+    const cx = e.clientX - rect.left;
+    const cy = e.clientY - rect.top;
 
-window.addEventListener('keydown', e => {
-  const speed = 20;
-  if (e.key === 'ArrowUp') moveCamera(0, -speed);
-  if (e.key === 'ArrowDown') moveCamera(0, speed);
-  if (e.key === 'ArrowLeft') moveCamera(-speed, 0);
-  if (e.key === 'ArrowRight') moveCamera(speed, 0);
-});
+    origin.x -= (cx / scale - cx / newScale);
+    origin.y -= (cy / scale - cy / newScale);
+    scale = newScale;
 
-async function init() {
-  await loadAvailableFiles();
-  if (!window.availableFiles || window.availableFiles.length === 0) {
-    document.getElementById('loader').textContent = 'No images available.';
-    return;
-  }
-  document.getElementById('loader').style.display = 'none';
-  cameraX = 0;
-  cameraY = 0;
-  gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px)`;
-  updateTiles();
-  animate();
+    setTransform();
+  }, { passive: false });
 }
-init();
 
-
-// --- Lazy Loading using IntersectionObserver ---
-
-const observer = new IntersectionObserver((entries, obs) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      const el = entry.target;
-      if (el.dataset.src) {
-        el.src = el.dataset.src;
-        el.removeAttribute('data-src');
-      }
-      el.classList.add("show");
-      obs.unobserve(el);
-    }
-  });
-});
-
-function createPost(src, type = "image") {
-  const post = document.createElement("div");
-  post.className = "post fade-in";
-
-  const frame = document.createElement("div");
-  frame.className = "frame";
-
-  let media;
-  if (type === "video") {
-    media = document.createElement("video");
-    media.dataset.src = src;
-    media.autoplay = true;
-    media.loop = true;
-    media.muted = true;
-    media.playsInline = true;
-  } else {
-    media = document.createElement("img");
-    media.dataset.src = src;
-    media.alt = "Gallery media";
-  }
-
-  observer.observe(media);
-  frame.appendChild(media);
-  post.appendChild(frame);
-  document.getElementById("gallery").appendChild(post);
-}
+loadImages();
+handlePointerEvents();
+handleKeyboardNavigation();
+handleMouseWheelZoom();
