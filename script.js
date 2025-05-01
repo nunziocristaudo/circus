@@ -59,6 +59,11 @@ function createPost(fileUrl) {
   const post = document.createElement('div');
   post.className = 'post fade-in';
   post.appendChild(frame);
+  
+  post.addEventListener('click', () => {
+  openLightbox(fileUrl);
+});
+  
   return post;
 }
 
