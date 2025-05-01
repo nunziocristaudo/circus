@@ -1,6 +1,6 @@
-
 const gallery = document.getElementById('gallery');
-let tileSize = 150;
+const tileSize = 150;
+const bufferTiles = 1;
 let tiles = new Map();
 
 const baseURL = 'https://dev.tinysquares.io/';
@@ -8,37 +8,50 @@ const workerURL = 'https://quiet-mouse-8001.flaxen-huskier-06.workers.dev/';
 
 let cameraX = 0;
 let cameraY = 0;
+
 let isDragging = false;
-let dragStartX = 0, dragStartY = 0;
-let velocityX = 0, velocityY = 0;
+let dragStartX = 0;
+let dragStartY = 0;
+let velocityX = 0;
+let velocityY = 0;
 
-let preloadedFiles = [];
+let lastMove = 0;
 
-async function preloadQueue() {
+async function loadAvailableFiles() {
   try {
     const response = await fetch(workerURL);
     const filenames = await response.json();
     window.availableFiles = filenames.map(name => baseURL + encodeURIComponent(name));
-    preloadedFiles = window.availableFiles.sort(() => 0.5 - Math.random()).slice(0, 200);
-  } catch (e) {
-    console.error("Failed to load files", e);
+    console.log('Loaded files:', window.availableFiles);
+  } catch (error) {
+    console.error('Failed to load available files', error);
     window.availableFiles = [];
-    preloadedFiles = [];
   }
 }
 
 function randomFile() {
-  return preloadedFiles.length ? preloadedFiles.pop() : '';
+  const files = (window.availableFiles || []).filter(file => {
+    const lower = file.toLowerCase();
+   return lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.webp') ||
+       lower.endsWith('.mp4') || lower.endsWith('.webm') || lower.endsWith('.mov');
+  });
+  const chosen = files.length ? files[Math.floor(Math.random() * files.length)] : '';
+  return chosen;
 }
 
 function createPost(fileUrl) {
+  const lowerUrl = fileUrl.toLowerCase();
   const frame = document.createElement('div');
   frame.className = 'frame';
-  let media = /\.(mp4|mov)$/i.test(fileUrl) ? document.createElement('video') : document.createElement('img');
-  if (media.tagName === 'VIDEO') {
-    Object.assign(media, { muted: true, loop: true, autoplay: true, playsInline: true });
+  let media;
+  if (lowerUrl.includes('.mp4') || lowerUrl.includes('.mov')) {
+    media = document.createElement('video');
+    media.muted = true;
+    media.loop = true;
+    media.autoplay = true;
+    media.playsInline = true;
   } else {
-    media.loading = "lazy";
+    media = document.createElement('img');
   }
   media.dataset.src = fileUrl;
   frame.appendChild(media);
@@ -50,7 +63,6 @@ function createPost(fileUrl) {
 }
 
 function updateTiles() {
-  const bufferTiles = 2;
   const viewWidth = window.innerWidth;
   const viewHeight = window.innerHeight;
 
@@ -59,28 +71,28 @@ function updateTiles() {
   const startRow = Math.floor((cameraY - bufferTiles * tileSize) / tileSize);
   const endRow = Math.ceil((cameraY + viewHeight + bufferTiles * tileSize) / tileSize);
 
-  const needed = new Set();
+  const neededTiles = new Set();
 
   for (let row = startRow; row <= endRow; row++) {
     for (let col = startCol; col <= endCol; col++) {
       const key = `${col},${row}`;
-      needed.add(key);
+      neededTiles.add(key);
       if (!tiles.has(key)) {
-        const url = randomFile();
-        if (url) {
-          const post = createPost(url);
-          post.style.left = `${col * tileSize}px`;
-          post.style.top = `${row * tileSize}px`;
-          gallery.appendChild(post);
-          requestAnimationFrame(() => post.classList.add('show'));
-          tiles.set(key, post);
-        }
+        const fileUrl = randomFile();
+        const post = createPost(fileUrl);
+        post.style.left = `${col * tileSize}px`;
+        post.style.top = `${row * tileSize}px`;
+        gallery.appendChild(post);
+        requestAnimationFrame(() => {
+          post.classList.add('show');
+        });
+        tiles.set(key, post);
       }
     }
   }
 
   for (const [key, tile] of tiles) {
-    if (!needed.has(key)) {
+    if (!neededTiles.has(key)) {
       gallery.removeChild(tile);
       tiles.delete(key);
     }
@@ -94,26 +106,39 @@ function lazyLoadTiles() {
     const media = tile.querySelector('img, video');
     const rect = tile.getBoundingClientRect();
     if (
-      rect.right >= -tileSize && rect.left <= window.innerWidth + tileSize &&
-      rect.bottom >= -tileSize && rect.top <= window.innerHeight + tileSize
+      rect.right >= 0 &&
+      rect.left <= window.innerWidth &&
+      rect.bottom >= 0 &&
+      rect.top <= window.innerHeight
     ) {
-      if (media.tagName === 'IMG' && !media.src) {
-        media.src = media.dataset.src;
-      } else if (media.tagName === 'VIDEO' && !media.children.length) {
-        const src = document.createElement('source');
-        src.src = media.dataset.src;
-        src.type = 'video/mp4';
-        media.appendChild(src);
-        media.load();
+      if (media.tagName === 'IMG') {
+        if (!media.src) {
+          media.src = media.dataset.src;
+        }
+      } else if (media.tagName === 'VIDEO') {
+        if (media.children.length === 0) {
+          const source = document.createElement('source');
+          source.src = media.dataset.src;
+          source.type = 'video/mp4';
+          media.appendChild(source);
+          media.load();
+        }
       }
     } else {
-      if (media.tagName === 'IMG') media.removeAttribute('src');
-      else if (media.tagName === 'VIDEO') media.innerHTML = '';
+      if (media.tagName === 'IMG') {
+        media.removeAttribute('src');
+      } else if (media.tagName === 'VIDEO') {
+        media.innerHTML = '';
+      }
     }
   });
 }
 
 function moveCamera(dx, dy) {
+  const now = Date.now();
+  if (now - lastMove < 16) return;
+  lastMove = now;
+
   cameraX += dx;
   cameraY += dy;
   gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px)`;
@@ -121,10 +146,12 @@ function moveCamera(dx, dy) {
 }
 
 function animate() {
-  if (!isDragging && (Math.abs(velocityX) > 0.1 || Math.abs(velocityY) > 0.1)) {
-    moveCamera(-velocityX, -velocityY);
-    velocityX *= 0.9;
-    velocityY *= 0.9;
+  if (!isDragging) {
+    if (Math.abs(velocityX) > 0.1 || Math.abs(velocityY) > 0.1) {
+      moveCamera(-velocityX, -velocityY);
+      velocityX *= 0.95;
+      velocityY *= 0.95;
+    }
   }
   requestAnimationFrame(animate);
 }
@@ -133,10 +160,13 @@ document.addEventListener('mousedown', e => {
   isDragging = true;
   dragStartX = e.clientX;
   dragStartY = e.clientY;
-  velocityX = velocityY = 0;
+  velocityX = 0;
+  velocityY = 0;
 });
 
-document.addEventListener('mouseup', () => isDragging = false);
+document.addEventListener('mouseup', () => {
+  isDragging = false;
+});
 
 document.addEventListener('mousemove', e => {
   if (isDragging) {
@@ -151,15 +181,20 @@ document.addEventListener('mousemove', e => {
 });
 
 document.addEventListener('touchstart', e => {
-  if (e.touches.length === 1) {
-    isDragging = true;
-    dragStartX = e.touches[0].clientX;
-    dragStartY = e.touches[0].clientY;
-  }
-}, { passive: false });
+  e.preventDefault();
+  isDragging = true;
+  const touch = e.touches[0];
+  dragStartX = touch.clientX;
+  dragStartY = touch.clientY;
+});
+
+document.addEventListener('touchend', () => {
+  isDragging = false;
+});
 
 document.addEventListener('touchmove', e => {
-  if (e.touches.length === 1 && isDragging) {
+  if (isDragging) {
+    e.preventDefault();
     const touch = e.touches[0];
     const dx = touch.clientX - dragStartX;
     const dy = touch.clientY - dragStartY;
@@ -169,25 +204,29 @@ document.addEventListener('touchmove', e => {
     dragStartX = touch.clientX;
     dragStartY = touch.clientY;
   }
-}, { passive: false });
+});
 
-document.addEventListener('touchend', () => isDragging = false);
+window.addEventListener('wheel', e => {
+  moveCamera(e.deltaX, e.deltaY);
+});
 
 window.addEventListener('keydown', e => {
-  const step = 20;
-  if (e.key === 'ArrowLeft') moveCamera(step, 0);
-  if (e.key === 'ArrowRight') moveCamera(-step, 0);
-  if (e.key === 'ArrowUp') moveCamera(0, step);
-  if (e.key === 'ArrowDown') moveCamera(0, -step);
+  const speed = 20;
+  if (e.key === 'ArrowUp') moveCamera(0, -speed);
+  if (e.key === 'ArrowDown') moveCamera(0, speed);
+  if (e.key === 'ArrowLeft') moveCamera(-speed, 0);
+  if (e.key === 'ArrowRight') moveCamera(speed, 0);
 });
 
 async function init() {
-  await preloadQueue();
-  if (!window.availableFiles.length) {
+  await loadAvailableFiles();
+  if (!window.availableFiles || window.availableFiles.length === 0) {
     document.getElementById('loader').textContent = 'No images available.';
     return;
   }
   document.getElementById('loader').style.display = 'none';
+  cameraX = 0;
+  cameraY = 0;
   gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px)`;
   updateTiles();
   animate();
