@@ -15,6 +15,20 @@
 <body>
   <div id="loader">Loading...</div>
   <main id="gallery"></main>
+
+  <!-- ✅ Add this block for lightbox functionality -->
+  <div id="lightbox" class="hidden">
+    <div class="overlay"></div>
+    <div class="lightbox-content">
+      <button id="closeBtn">×</button>
+      <div class="like-box">
+        <span class="heart">♡</span>
+        <span id="likeCount">0</span>
+      </div>
+      <div id="mediaContainer"></div>
+    </div>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>
