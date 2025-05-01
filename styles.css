@@ -104,8 +104,8 @@ body {
 
 .lightbox-content {
   position: relative;
-  width: 25vw;
-  height: 25vh;
+  width: 75vw;
+  height: 75vh;
   max-width: 100%;
   max-height: 100%;
 }
