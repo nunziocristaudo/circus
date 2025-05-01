@@ -44,7 +44,7 @@ function createPost(fileUrl) {
   const frame = document.createElement('div');
   frame.className = 'frame';
   let media;
-  if (lowerUrl.includes('.mp4') || lowerUrl.includes('.mov')) {
+  if (lowerUrl.includes('.mp4') || lowerUrl.includes('.mov') || lowerUrl.includes('.webm')) {
     media = document.createElement('video');
     media.muted = true;
     media.loop = true;
