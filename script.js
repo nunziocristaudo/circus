@@ -1,122 +1,266 @@
-const gallery = document.getElementById("gallery");
-const loader = document.getElementById("loader");
+const gallery = document.getElementById('gallery');
+const tileSize = 150;
+const bufferTiles = 1;
+let tiles = new Map();
 
 const baseURL = 'https://dev.tinysquares.io/';
 const workerURL = 'https://quiet-mouse-8001.flaxen-huskier-06.workers.dev/';
 
-let scale = 1;
-let translateX = 0;
-let translateY = 0;
-let isDragging = false;
-let lastX = 0;
-let lastY = 0;
+let cameraX = 0;
+let cameraY = 0;
 
-// Lazy loading observer
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      const img = entry.target.querySelector("img");
-      if (img && img.dataset.src) {
-        img.src = img.dataset.src;
-        delete img.dataset.src;
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let velocityX = 0;
+let velocityY = 0;
+
+let lastMove = 0;
+
+async function loadAvailableFiles() {
+  try {
+    const response = await fetch(workerURL);
+    const filenames = await response.json();
+    window.availableFiles = filenames.map(name => baseURL + encodeURIComponent(name));
+    console.log('Loaded files:', window.availableFiles);
+  } catch (error) {
+    console.error('Failed to load available files', error);
+    window.availableFiles = [];
+  }
+}
+
+function randomFile() {
+  const files = (window.availableFiles || []).filter(file => {
+    const lower = file.toLowerCase();
+    return lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.mp4');
+  });
+  const chosen = files.length ? files[Math.floor(Math.random() * files.length)] : '';
+  return chosen;
+}
+
+ else {
+    media = document.createElement('img');
+  }
+  media.dataset.src = fileUrl;
+  frame.appendChild(media);
+
+  const post = document.createElement('div');
+  post.className = 'post fade-in';
+  post.appendChild(frame);
+  return post;
+}
+
+function updateTiles() {
+  const viewWidth = window.innerWidth;
+  const viewHeight = window.innerHeight;
+
+  const startCol = Math.floor((cameraX - bufferTiles * tileSize) / tileSize);
+  const endCol = Math.ceil((cameraX + viewWidth + bufferTiles * tileSize) / tileSize);
+  const startRow = Math.floor((cameraY - bufferTiles * tileSize) / tileSize);
+  const endRow = Math.ceil((cameraY + viewHeight + bufferTiles * tileSize) / tileSize);
+
+  const neededTiles = new Set();
+
+  for (let row = startRow; row <= endRow; row++) {
+    for (let col = startCol; col <= endCol; col++) {
+      const key = `${col},${row}`;
+      neededTiles.add(key);
+      if (!tiles.has(key)) {
+        const fileUrl = randomFile();
+        const post = createPost(fileUrl);
+        post.style.left = `${col * tileSize}px`;
+        post.style.top = `${row * tileSize}px`;
+        gallery.appendChild(post);
+        requestAnimationFrame(() => {
+          post.classList.add('show');
+        });
+        tiles.set(key, post);
       }
-      entry.target.classList.add("show");
-      observer.unobserve(entry.target);
+    }
+  }
+
+  for (const [key, tile] of tiles) {
+    if (!neededTiles.has(key)) {
+      gallery.removeChild(tile);
+      tiles.delete(key);
+    }
+  }
+
+  lazyLoadTiles();
+}
+
+function lazyLoadTiles() {
+  tiles.forEach(tile => {
+    const media = tile.querySelector('img, video');
+    const rect = tile.getBoundingClientRect();
+    if (
+      rect.right >= 0 &&
+      rect.left <= window.innerWidth &&
+      rect.bottom >= 0 &&
+      rect.top <= window.innerHeight
+    ) {
+      if (media.tagName === 'IMG') {
+        if (!media.src) {
+          media.src = media.dataset.src;
+        }
+      } else if (media.tagName === 'VIDEO') {
+        if (media.children.length === 0) {
+          const source = document.createElement('source');
+          source.src = media.dataset.src;
+          source.type = 'video/mp4';
+          media.appendChild(source);
+          media.load();
+        }
+      }
+    } else {
+      if (media.tagName === 'IMG') {
+        media.removeAttribute('src');
+      } else if (media.tagName === 'VIDEO') {
+        media.innerHTML = '';
+      }
     }
   });
-}, {
-  root: null,
-  rootMargin: "200px",
-  threshold: 0.1
-});
+}
 
-// Pan and zoom
-const updateTransform = () => {
-  gallery.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
-  requestAnimationFrame(updateTransform);
-};
-updateTransform();
+function moveCamera(dx, dy) {
+  const now = Date.now();
+  if (now - lastMove < 16) return;
+  lastMove = now;
 
-gallery.addEventListener("mousedown", (e) => {
+  cameraX += dx;
+  cameraY += dy;
+  gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px)`;
+  updateTiles();
+}
+
+function animate() {
+  if (!isDragging) {
+    if (Math.abs(velocityX) > 0.1 || Math.abs(velocityY) > 0.1) {
+      moveCamera(-velocityX, -velocityY);
+      velocityX *= 0.95;
+      velocityY *= 0.95;
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+document.addEventListener('mousedown', e => {
   isDragging = true;
-  lastX = e.clientX;
-  lastY = e.clientY;
-  gallery.style.cursor = "grabbing";
+  dragStartX = e.clientX;
+  dragStartY = e.clientY;
+  velocityX = 0;
+  velocityY = 0;
 });
 
-window.addEventListener("mousemove", (e) => {
-  if (!isDragging) return;
-  translateX += e.clientX - lastX;
-  translateY += e.clientY - lastY;
-  lastX = e.clientX;
-  lastY = e.clientY;
-});
-
-window.addEventListener("mouseup", () => {
+document.addEventListener('mouseup', () => {
   isDragging = false;
-  gallery.style.cursor = "grab";
 });
 
-window.addEventListener("wheel", (e) => {
-  const delta = -e.deltaY * 0.001;
-  scale = Math.min(Math.max(0.5, scale + delta), 3);
+document.addEventListener('mousemove', e => {
+  if (isDragging) {
+    const dx = e.clientX - dragStartX;
+    const dy = e.clientY - dragStartY;
+    moveCamera(-dx, -dy);
+    velocityX = dx;
+    velocityY = dy;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+  }
 });
 
-// Create post from filename
-function createPost(filename, index, cols) {
+document.addEventListener('touchstart', e => {
+  e.preventDefault();
+  isDragging = true;
+  const touch = e.touches[0];
+  dragStartX = touch.clientX;
+  dragStartY = touch.clientY;
+});
+
+document.addEventListener('touchend', () => {
+  isDragging = false;
+});
+
+document.addEventListener('touchmove', e => {
+  if (isDragging) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const dx = touch.clientX - dragStartX;
+    const dy = touch.clientY - dragStartY;
+    moveCamera(-dx, -dy);
+    velocityX = dx;
+    velocityY = dy;
+    dragStartX = touch.clientX;
+    dragStartY = touch.clientY;
+  }
+});
+
+window.addEventListener('wheel', e => {
+  moveCamera(e.deltaX, e.deltaY);
+});
+
+window.addEventListener('keydown', e => {
+  const speed = 20;
+  if (e.key === 'ArrowUp') moveCamera(0, -speed);
+  if (e.key === 'ArrowDown') moveCamera(0, speed);
+  if (e.key === 'ArrowLeft') moveCamera(-speed, 0);
+  if (e.key === 'ArrowRight') moveCamera(speed, 0);
+});
+
+async function init() {
+  await loadAvailableFiles();
+  if (!window.availableFiles || window.availableFiles.length === 0) {
+    document.getElementById('loader').textContent = 'No images available.';
+    return;
+  }
+  document.getElementById('loader').style.display = 'none';
+  cameraX = 0;
+  cameraY = 0;
+  gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px)`;
+  updateTiles();
+  animate();
+}
+init();
+
+
+// --- Lazy Loading using IntersectionObserver ---
+
+const observer = new IntersectionObserver((entries, obs) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const el = entry.target;
+      if (el.dataset.src) {
+        el.src = el.dataset.src;
+        el.removeAttribute('data-src');
+      }
+      el.classList.add("show");
+      obs.unobserve(el);
+    }
+  });
+});
+
+function createPost(src, type = "image") {
   const post = document.createElement("div");
   post.className = "post fade-in";
 
   const frame = document.createElement("div");
   frame.className = "frame";
 
-  const ext = filename.split('.').pop().toLowerCase();
   let media;
-
-  const src = `${baseURL}${filename}`;
-
-  if (ext === 'mp4' || ext === 'mov') {
+  if (type === "video") {
     media = document.createElement("video");
-    media.src = src;
-    media.muted = true;
-    media.loop = true;
+    media.dataset.src = src;
     media.autoplay = true;
+    media.loop = true;
+    media.muted = true;
     media.playsInline = true;
   } else {
     media = document.createElement("img");
     media.dataset.src = src;
-    media.alt = "";
+    media.alt = "Gallery media";
   }
 
+  observer.observe(media);
   frame.appendChild(media);
   post.appendChild(frame);
-
-  // Layout positioning
-  const x = (index % cols) * 150;
-  const y = Math.floor(index / cols) * 150;
-  post.style.left = `${x}px`;
-  post.style.top = `${y}px`;
-
-  gallery.appendChild(post);
-  observer.observe(post);
+  document.getElementById("gallery").appendChild(post);
 }
-
-// Fetch media list and populate gallery
-async function loadGallery() {
-  try {
-    const response = await fetch(workerURL);
-    const files = await response.json();
-
-    const cols = Math.floor(window.innerWidth / 150);
-    files.forEach((filename, index) => {
-      createPost(filename, index, cols);
-    });
-
-  } catch (err) {
-    console.error("Error loading media:", err);
-  } finally {
-    loader.style.display = "none";
-  }
-}
-
-loadGallery();
