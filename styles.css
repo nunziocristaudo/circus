@@ -26,9 +26,9 @@ body {
   width: 150px;
   height: 150px;
   overflow: hidden;
-  pointer-events: none;
   border: 0.1px solid rgba(255, 255, 255, 0.01);
   box-sizing: border-box;
+  cursor: pointer;
 }
 
 .frame {
@@ -48,7 +48,7 @@ body {
   height: 100%;
   object-fit: cover;
   object-position: center;
-  pointer-events: none;
+  events: none;
   user-select: none;
   transition: transform 0.3s ease, opacity 0.3s ease;
 }
