@@ -294,4 +294,6 @@ heart.addEventListener('click', () => {
   const updated = incrementLikes(currentMediaUrl);
   likeCountSpan.textContent = updated;
   heart.textContent = '❤️';
+  heart.classList.add('clicked');
+  setTimeout(() => heart.classList.remove('clicked'), 400);
 });
