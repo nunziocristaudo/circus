@@ -232,3 +232,61 @@ async function init() {
   animate();
 }
 init();
+
+const lightbox = document.getElementById('lightbox');
+const mediaContainer = document.getElementById('mediaContainer');
+const closeBtn = document.getElementById('closeBtn');
+const likeBox = document.querySelector('.like-box');
+const likeCountSpan = document.getElementById('likeCount');
+const heart = document.querySelector('.heart');
+
+let currentMediaUrl = '';
+
+function openLightbox(fileUrl) {
+  currentMediaUrl = fileUrl;
+  mediaContainer.innerHTML = '';
+
+  const ext = fileUrl.toLowerCase().split('.').pop();
+  let media;
+  if (['mp4', 'webm', 'mov'].includes(ext)) {
+    media = document.createElement('video');
+    media.src = fileUrl;
+    media.autoplay = true;
+    media.loop = true;
+    media.muted = false;
+    media.controls = true;
+    media.playsInline = true;
+  } else {
+    media = document.createElement('img');
+    media.src = fileUrl;
+  }
+
+  mediaContainer.appendChild(media);
+  likeCountSpan.textContent = getLikes(fileUrl);
+  heart.textContent = '♡';
+  lightbox.classList.remove('hidden');
+}
+
+function closeLightbox() {
+  lightbox.classList.add('hidden');
+  mediaContainer.innerHTML = '';
+}
+
+function getLikes(url) {
+  return parseInt(localStorage.getItem(`likes_${url}`) || '0', 10);
+}
+
+function incrementLikes(url) {
+  const current = getLikes(url);
+  const updated = current + 1;
+  localStorage.setItem(`likes_${url}`, updated);
+  return updated;
+}
+
+// Hook up modal close and like button
+closeBtn.addEventListener('click', closeLightbox);
+heart.addEventListener('click', () => {
+  const updated = incrementLikes(currentMediaUrl);
+  likeCountSpan.textContent = updated;
+  heart.textContent = '❤️';
+});
