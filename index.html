@@ -30,7 +30,10 @@
     </p>
   </footer>
 
+  <!-- core behaviour -->
   <script src="script.js"></script>
+
+  <!-- header/footer hide behaviour -->
   <script>
     let hideTimeout;
     function showBars() {
@@ -46,6 +49,36 @@
     window.addEventListener('scroll', showBars);
     window.addEventListener('touchmove', showBars);
     showBars();
+  </script>
+
+  <!-- mobile add-to-home-screen prompt -->
+  <script>
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const shown = localStorage.getItem('a2hsPromptShown');
+
+    if (isMobile && !shown) {
+      const prompt = document.createElement('div');
+      prompt.innerHTML = "📲 Add TinySquares to your home screen for faster access.<br><small>Tap the share icon and choose 'Add to Home Screen'</small>";
+      prompt.style.position = "fixed";
+      prompt.style.bottom = "1rem";
+      prompt.style.left = "50%";
+      prompt.style.transform = "translateX(-50%)";
+      prompt.style.background = "#000";
+      prompt.style.color = "#fff";
+      prompt.style.padding = "1rem";
+      prompt.style.borderRadius = "1rem";
+      prompt.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
+      prompt.style.zIndex = "9999";
+      prompt.style.textAlign = "center";
+      prompt.style.maxWidth = "90%";
+
+      document.body.appendChild(prompt);
+      localStorage.setItem('a2hsPromptShown', 'true');
+
+      setTimeout(() => {
+        prompt.remove();
+      }, 10000);
+    }
   </script>
 </body>
 </html>
