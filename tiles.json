@@ -59,6 +59,13 @@ function createPost(fileObj) {
   if (fileObj.tier === 'paid') post.classList.add('paid');
   post.appendChild(frame);
 
+  if (fileObj.link) {
+    post.style.cursor = 'pointer';
+    post.addEventListener('click', () => {
+      window.open(fileObj.link, '_blank');
+    });
+  }
+
   return post;
 }
 
