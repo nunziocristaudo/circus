@@ -1,0 +1,10 @@
+async function loadAvailableFiles() {
+  try {
+    const response = await fetch("tiles.json");
+    window.availableFiles = await response.json();
+    console.log("Loaded metadata-based tiles:", window.availableFiles);
+  } catch (error) {
+    console.error("Failed to load tile metadata", error);
+    window.availableFiles = [];
+  }
+}
