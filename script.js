@@ -21,7 +21,14 @@ async function loadAvailableFiles() {
   try {
     const response = await fetch(workerURL);
     const filenames = await response.json();
-    window.availableFiles = filenames.map(name => baseURL + encodeURIComponent(name));
+    window.availableFiles = filenames.map(name => {
+      return {
+        url: baseURL + encodeURIComponent(name),
+        creator: "", // Optionally populate from a separate metadata source
+        link: "",     // Optional affiliate or creator link
+        tier: name.startsWith('featured_') ? 'featured' : name.startsWith('paid_') ? 'paid' : 'free'
+      };
+    });
     console.log('Loaded files:', window.availableFiles);
   } catch (error) {
     console.error('Failed to load available files', error);
@@ -31,16 +38,17 @@ async function loadAvailableFiles() {
 
 function randomFile() {
   const files = (window.availableFiles || []).filter(file => {
-    const lower = file.toLowerCase();
-   return lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.webp') ||
-       lower.endsWith('.mp4') || lower.endsWith('.webm') || lower.endsWith('.mov');
+    const lower = file.url.toLowerCase();
+    return lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.webp') ||
+           lower.endsWith('.mp4') || lower.endsWith('.webm') || lower.endsWith('.mov');
   });
-  const chosen = files.length ? files[Math.floor(Math.random() * files.length)] : '';
+  const chosen = files.length ? files[Math.floor(Math.random() * files.length)] : null;
   return chosen;
 }
 
-function createPost(fileUrl) {
-  const lowerUrl = fileUrl.toLowerCase();
+function createPost(fileObj) {
+  if (!fileObj) return;
+  const lowerUrl = fileObj.url.toLowerCase();
   const frame = document.createElement('div');
   frame.className = 'frame';
   let media;
@@ -53,17 +61,19 @@ function createPost(fileUrl) {
   } else {
     media = document.createElement('img');
   }
-  media.dataset.src = fileUrl;
+  media.dataset.src = fileObj.url;
   frame.appendChild(media);
 
   const post = document.createElement('div');
   post.className = 'post fade-in';
+  if (fileObj.tier === 'featured') post.classList.add('featured');
+  if (fileObj.tier === 'paid') post.classList.add('paid');
   post.appendChild(frame);
-  
+
   post.addEventListener('click', () => {
-  openLightbox(fileUrl);
-});
-  
+    openLightbox(fileObj);
+  });
+
   return post;
 }
 
@@ -83,8 +93,9 @@ function updateTiles() {
       const key = `${col},${row}`;
       neededTiles.add(key);
       if (!tiles.has(key)) {
-        const fileUrl = randomFile();
-        const post = createPost(fileUrl);
+        const fileObj = randomFile();
+        const post = createPost(fileObj);
+        if (!post) continue;
         post.style.left = `${col * tileSize}px`;
         post.style.top = `${row * tileSize}px`;
         gallery.appendChild(post);
@@ -244,18 +255,20 @@ const closeBtn = document.getElementById('closeBtn');
 const likeBox = document.querySelector('.like-box');
 const likeCountSpan = document.getElementById('likeCount');
 const heart = document.querySelector('.heart');
+const linkBox = document.getElementById('linkBox');
 
 let currentMediaUrl = '';
 
-function openLightbox(fileUrl) {
-  currentMediaUrl = fileUrl;
+function openLightbox(fileObj) {
+  currentMediaUrl = fileObj.url;
   mediaContainer.innerHTML = '';
+  linkBox.innerHTML = '';
 
-  const ext = fileUrl.toLowerCase().split('.').pop();
+  const ext = currentMediaUrl.toLowerCase().split('.').pop();
   let media;
   if (['mp4', 'webm', 'mov'].includes(ext)) {
     media = document.createElement('video');
-    media.src = fileUrl;
+    media.src = currentMediaUrl;
     media.autoplay = true;
     media.loop = true;
     media.muted = false;
@@ -263,18 +276,28 @@ function openLightbox(fileUrl) {
     media.playsInline = true;
   } else {
     media = document.createElement('img');
-    media.src = fileUrl;
+    media.src = currentMediaUrl;
   }
 
   mediaContainer.appendChild(media);
-  likeCountSpan.textContent = getLikes(fileUrl);
+  likeCountSpan.textContent = getLikes(currentMediaUrl);
   heart.textContent = '♡';
   lightbox.classList.remove('hidden');
+
+  if (fileObj.link) {
+    const link = document.createElement('a');
+    link.href = fileObj.link;
+    link.textContent = 'Learn more or support this creator →';
+    link.target = '_blank';
+    link.rel = 'noopener';
+    linkBox.appendChild(link);
+  }
 }
 
 function closeLightbox() {
   lightbox.classList.add('hidden');
   mediaContainer.innerHTML = '';
+  linkBox.innerHTML = '';
 }
 
 function getLikes(url) {
