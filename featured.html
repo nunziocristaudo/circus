@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Featured Tiles – TinySquares</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header id="topbar">
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="submit.html">Submit a Tile</a>
+      <a href="featured.html">Featured</a>
+      <a href="template.html">Get the Template</a>
+    </nav>
+  </header>
+
+  <main style="padding: 2rem; max-width: 900px; margin: auto;">
+    <h1>Featured Tiles</h1>
+    <p>Our favourite and most prominent tiles, curated for their beauty, creativity, or originality. Featured tiles enjoy premium placement in the grid and are refreshed regularly.</p>
+
+    <section id="featuredGallery" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; margin-top: 2rem;">
+      <!-- Placeholder thumbnails for static preview -->
+      <div class="post featured"><img src="sample1.webp" alt="Sample 1"></div>
+      <div class="post featured"><img src="sample2.webp" alt="Sample 2"></div>
+      <div class="post featured"><img src="sample3.webp" alt="Sample 3"></div>
+      <div class="post featured"><video src="sample4.mp4" autoplay loop muted></video></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Want to be featured? <a href="submit.html">Submit your tile</a> and select the Featured tier.</p>
+  </footer>
+</body>
+</html>
