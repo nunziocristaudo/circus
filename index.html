@@ -9,8 +9,11 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="TinySquares">
   <link rel="stylesheet" href="styles.css">
-  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="icon" href="favicon.jpeg" type="image/jpeg">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <style>
+    #topbar.hide, footer.hide { display: none !important; }
+  </style>
 </head>
 <body>
   <header id="topbar">
@@ -25,26 +28,29 @@
   <div id="loader">Loading...</div>
   <main id="gallery"></main>
 
-  <div id="lightbox" class="hidden">
-    <div class="overlay"></div>
-    <div class="lightbox-content">
-      <button id="closeBtn">×</button>
-      <div class="like-box">
-        <span class="heart">♡</span>
-        <span id="likeCount">0</span>
-      </div>
-      <div id="mediaContainer"></div>
-      <div id="linkBox"></div>
-    </div>
-  </div>
-
   <footer>
     <p>
-      Want your work on TinySquares? <a href="submit.html">Submit a tile</a>.
+      Want your work on TinySquares? <a href="submit.html">Submit a tile</a>.  
       Buy the full template <a href="template.html">here</a>.
     </p>
   </footer>
 
   <script src="script.js"></script>
+  <script>
+    let hideTimeout;
+    function showBars() {
+      clearTimeout(hideTimeout);
+      document.getElementById('topbar').classList.remove('hide');
+      document.querySelector('footer').classList.remove('hide');
+      hideTimeout = setTimeout(() => {
+        document.getElementById('topbar').classList.add('hide');
+        document.querySelector('footer').classList.add('hide');
+      }, 2000);
+    }
+    window.addEventListener('mousemove', showBars);
+    window.addEventListener('scroll', showBars);
+    window.addEventListener('touchmove', showBars);
+    showBars();
+  </script>
 </body>
 </html>
