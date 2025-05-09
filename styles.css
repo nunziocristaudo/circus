@@ -1,6 +1,8 @@
 :root {
   --bg-color: black;
   --text-color: white;
+  --featured-color: gold;
+  --paid-color: dodgerblue;
 }
 
 body {
@@ -29,6 +31,16 @@ body {
   border: 0.1px solid rgba(255, 255, 255, 0.01);
   box-sizing: border-box;
   cursor: pointer;
+}
+
+.post.featured {
+  box-shadow: 0 0 10px 2px var(--featured-color);
+  border: 1px solid var(--featured-color);
+}
+
+.post.paid {
+  box-shadow: 0 0 6px 1px var(--paid-color);
+  border: 1px solid var(--paid-color);
 }
 
 .frame {
@@ -139,6 +151,18 @@ body {
   max-height: 100%;
 }
 
+#linkBox {
+  margin-top: 1rem;
+  font-size: 1rem;
+  text-align: center;
+}
+
+#linkBox a {
+  color: var(--paid-color);
+  text-decoration: none;
+  font-weight: bold;
+}
+
 .heart.clicked {
   animation: pop 0.4s ease;
   color: red;
@@ -152,4 +176,41 @@ body {
 
 .heart {
   transition: transform 0.2s ease, color 0.2s ease;
+}
+
+#topbar {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 0.5rem 1rem;
+  z-index: 10000;
+  display: flex;
+  justify-content: center;
+}
+
+#topbar nav a {
+  margin: 0 1rem;
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+footer {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  text-align: center;
+  color: white;
+  padding: 0.5rem;
+  font-size: 0.85rem;
+}
+
+footer a {
+  color: var(--featured-color);
+  font-weight: bold;
+  text-decoration: none;
 }
