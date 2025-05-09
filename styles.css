@@ -214,3 +214,14 @@ footer a {
   font-weight: bold;
   text-decoration: none;
 }
+
+a {
+  color: #FFD700;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+a:hover {
+  text-decoration: underline;
+  color: #ffffff;
+}
