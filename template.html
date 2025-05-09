@@ -5,6 +5,9 @@
   <title>Get the Template – TinySquares</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="styles.css">
+  <style>
+    #topbar.hide, footer.hide { display: none !important; }
+  </style>
 </head>
 <body>
   <header id="topbar">
@@ -46,5 +49,22 @@
   <footer>
     <p>Want to be part of the main gallery? <a href="submit.html">Submit your tile here</a>.</p>
   </footer>
+
+  <script>
+    let hideTimeout;
+    function showBars() {
+      clearTimeout(hideTimeout);
+      document.getElementById('topbar').classList.remove('hide');
+      document.querySelector('footer').classList.remove('hide');
+      hideTimeout = setTimeout(() => {
+        document.getElementById('topbar').classList.add('hide');
+        document.querySelector('footer').classList.add('hide');
+      }, 2000);
+    }
+    window.addEventListener('mousemove', showBars);
+    window.addEventListener('scroll', showBars);
+    window.addEventListener('touchmove', showBars);
+    showBars();
+  </script>
 </body>
 </html>
