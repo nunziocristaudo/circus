@@ -5,6 +5,9 @@
   <title>Submit a Tile – TinySquares</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="styles.css">
+  <style>
+    #topbar.hide, footer.hide { display: none !important; }
+  </style>
 </head>
 <body>
   <header id="topbar">
@@ -31,6 +34,10 @@
 
     <p><em>Note: Videos should be under 30 seconds and under 5MB.</em></p>
 
+    <a href="https://buy.stripe.com/test_cN28zFdfAgSe3aE7ss" style="background: gold; color: black; padding: 1rem 1.5rem; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; margin-bottom: 1.5rem;">
+      Buy Now via Stripe →
+    </a>
+
     <iframe data-tally-src="https://tally.so/r/mO0L1N" loading="lazy" width="100%" height="600" frameborder="0" marginheight="0" marginwidth="0" title="Tile Submission Form"></iframe>
     <script>
       var d=document,s=d.createElement("script");s.src="https://tally.so/widgets/embed.js";s.onload=function(){Tally.loadEmbeds()};d.body.appendChild(s);
@@ -40,5 +47,22 @@
   <footer>
     <p>Submissions are reviewed before publishing. For questions, email hello@tinysquares.io</p>
   </footer>
+
+  <script>
+    let hideTimeout;
+    function showBars() {
+      clearTimeout(hideTimeout);
+      document.getElementById('topbar').classList.remove('hide');
+      document.querySelector('footer').classList.remove('hide');
+      hideTimeout = setTimeout(() => {
+        document.getElementById('topbar').classList.add('hide');
+        document.querySelector('footer').classList.add('hide');
+      }, 2000);
+    }
+    window.addEventListener('mousemove', showBars);
+    window.addEventListener('scroll', showBars);
+    window.addEventListener('touchmove', showBars);
+    showBars();
+  </script>
 </body>
 </html>
