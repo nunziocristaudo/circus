@@ -79,6 +79,27 @@
         prompt.remove();
       }, 10000);
     }
-  </script>
+    if (window.innerWidth < 768) {
+      let lastScrollY = window.scrollY;
+      let ticking = false;
+
+      function handleScroll() {
+        const currentScrollY = window.scrollY;
+        const goingDown = currentScrollY > lastScrollY;
+        lastScrollY = currentScrollY;
+
+        document.getElementById('topbar').classList.toggle('hide', goingDown);
+        document.querySelector('footer').classList.toggle('hide', goingDown);
+        ticking = false;
+     }
+
+     window.addEventListener('scroll', () => {
+       if (!ticking) {
+         window.requestAnimationFrame(handleScroll);
+         ticking = true;
+       }
+     });
+   } 
+ </script>
 </body>
 </html>
