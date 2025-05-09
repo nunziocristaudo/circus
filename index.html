@@ -13,9 +13,18 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
 </head>
 <body>
+  <header id="topbar">
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="submit.html">Submit a Tile</a>
+      <a href="featured.html">Featured</a>
+      <a href="template.html">Get the Template</a>
+    </nav>
+  </header>
+
   <div id="loader">Loading...</div>
   <main id="gallery"></main>
-  
+
   <div id="lightbox" class="hidden">
     <div class="overlay"></div>
     <div class="lightbox-content">
@@ -25,8 +34,16 @@
         <span id="likeCount">0</span>
       </div>
       <div id="mediaContainer"></div>
+      <div id="linkBox"></div>
     </div>
   </div>
+
+  <footer>
+    <p>
+      Want your work on TinySquares? <a href="submit.html">Submit a tile</a>.
+      Buy the full template <a href="template.html">here</a>.
+    </p>
+  </footer>
 
   <script src="script.js"></script>
 </body>
