@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>About Us – TinySquares</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    #topbar.hide, footer.hide { display: none !important; }
+  </style>
+</head>
+<body oncontextmenu="return false">
+  <header id="topbar">
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="submit.html">Submit a Tile</a>
+      <a href="featured.html">Featured</a>
+      <a href="about.html">About</a>
+    </nav>
+  </header>
+
+  <main style="padding: 2rem; max-width: 800px; margin: auto;">
+    <h1>About TinySquares</h1>
+    <p><strong>TinySquares</strong> is a curated visual playground — a place where artists, creators, dreamers, and wanderers can share their work in bite-sized moments. We believe in the quiet power of small things: a frame, a loop, a still image that makes you pause.</p>
+
+    <p>This platform was built to celebrate creativity with minimal distraction. There are no likes, no comments — just a mosaic of beautiful, raw, and curious moments, designed to inspire.</p>
+
+    <p>Anyone can contribute. Whether you're a professional artist, a hobbyist photographer, or someone who simply captured something meaningful — this grid is yours.</p>
+
+    <h2>Who’s behind it?</h2>
+    <p>This project was created and maintained by a small, independent creative team who loves design, storytelling, and building tools that feel like art. We work out of coffee shops, quiet bedrooms, and studio corners across the globe.</p>
+
+    <h2>How do I get involved?</h2>
+    <ul>
+      <li><a href="submit.html">Submit your own tile</a></li>
+      <li><a href="mailto:hello@tinysquares.io">Reach out</a> with ideas or collaborations</li>
+    </ul>
+  </main>
+
+  <footer>
+    <p>Made with intention. © TinySquares 2025</p>
+  </footer>
+
+  <script>
+    let hideTimeout;
+    function showBars() {
+      clearTimeout(hideTimeout);
+      document.getElementById('topbar').classList.remove('hide');
+      document.querySelector('footer').classList.remove('hide');
+      hideTimeout = setTimeout(() => {
+        document.getElementById('topbar').classList.add('hide');
+        document.querySelector('footer').classList.add('hide');
+      }, 2000);
+    }
+    window.addEventListener('mousemove', showBars);
+    window.addEventListener('scroll', showBars);
+    window.addEventListener('touchmove', showBars);
+    showBars();
+  </script>
+</body>
+</html>
