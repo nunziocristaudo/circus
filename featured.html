@@ -5,6 +5,9 @@
   <title>Featured Tiles – TinySquares</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="styles.css">
+  <style>
+    #topbar.hide, footer.hide { display: none !important; }
+  </style>
 </head>
 <body>
   <header id="topbar">
@@ -18,10 +21,13 @@
 
   <main style="padding: 2rem; max-width: 900px; margin: auto;">
     <h1>Featured Tiles</h1>
-    <p>Our favourite and most prominent tiles, curated for their beauty, creativity, or originality. Featured tiles enjoy premium placement in the grid and are refreshed regularly.</p>
+    <p>
+      These are some of the most creative and inspiring submissions. 
+      Featured tiles enjoy top placement and priority in the public gallery.
+    </p>
 
     <section id="featuredGallery" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; margin-top: 2rem;">
-      <!-- Placeholder thumbnails for static preview -->
+      <!-- Replace these samples with actual featured tiles -->
       <div class="post featured"><img src="sample1.webp" alt="Sample 1"></div>
       <div class="post featured"><img src="sample2.webp" alt="Sample 2"></div>
       <div class="post featured"><img src="sample3.webp" alt="Sample 3"></div>
@@ -32,5 +38,22 @@
   <footer>
     <p>Want to be featured? <a href="submit.html">Submit your tile</a> and select the Featured tier.</p>
   </footer>
+
+  <script>
+    let hideTimeout;
+    function showBars() {
+      clearTimeout(hideTimeout);
+      document.getElementById('topbar').classList.remove('hide');
+      document.querySelector('footer').classList.remove('hide');
+      hideTimeout = setTimeout(() => {
+        document.getElementById('topbar').classList.add('hide');
+        document.querySelector('footer').classList.add('hide');
+      }, 2000);
+    }
+    window.addEventListener('mousemove', showBars);
+    window.addEventListener('scroll', showBars);
+    window.addEventListener('touchmove', showBars);
+    showBars();
+  </script>
 </body>
 </html>
