@@ -182,31 +182,33 @@ body {
   position: fixed;
   top: 0;
   width: 100%;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.85);
   color: white;
-  padding: 0.5rem 1rem;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem; /* slightly smaller text */
   z-index: 10000;
   display: flex;
   justify-content: center;
 }
 
 #topbar nav a {
-  margin: 0 1rem;
+  margin: 0 0.75rem;
   color: white;
   text-decoration: none;
   font-weight: bold;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 footer {
   position: fixed;
   bottom: 0;
   width: 100%;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.7);
   text-align: center;
   color: white;
-  padding: 0.5rem;
-  font-size: 0.85rem;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  z-index: 10000;
 }
 
 footer a {
@@ -232,3 +234,17 @@ body.scrollable {
   touch-action: auto;
 }
 
+#viewport {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+
+#gallery {
+  position: absolute;
+  transform-origin: top left;
+}
