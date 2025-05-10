@@ -1,4 +1,3 @@
-
 const gallery = document.getElementById('gallery');
 const tileSize = 150;
 const bufferTiles = 1;
