@@ -59,6 +59,7 @@ function createPost(fileObj) {
   const lowerUrl = fileObj.url.toLowerCase();
   const frame = document.createElement('div');
   frame.className = 'frame';
+
   let media;
   if (lowerUrl.includes('.mp4') || lowerUrl.includes('.mov') || lowerUrl.includes('.webm')) {
     media = document.createElement('video');
@@ -69,6 +70,8 @@ function createPost(fileObj) {
   } else {
     media = document.createElement('img');
   }
+
+  // ✅ Correct the path using baseURL
   media.dataset.src = baseURL + fileObj.url;
   frame.appendChild(media);
 
@@ -78,9 +81,14 @@ function createPost(fileObj) {
   if (fileObj.tier === 'paid') post.classList.add('paid');
   post.appendChild(frame);
 
-  post.addEventListener('click', () => {
-    openLightbox(fileObj);
-  });
+  if (fileObj.link) {
+    post.style.cursor = 'pointer';
+    post.style.pointerEvents = 'auto';
+    post.addEventListener('click', (e) => {
+      e.stopPropagation();
+      window.open(fileObj.link, '_blank');
+    });
+  }
 
   return post;
 }
