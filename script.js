@@ -1,6 +1,6 @@
 const gallery = document.getElementById('gallery');
 const tileSize = 150;
-const bufferTiles = 2;
+const bufferTiles = 1;
 let tiles = new Map();
 
 const baseURL = 'https://dev.tinysquares.io/';
@@ -133,39 +133,20 @@ function updateTiles() {
   lazyLoadTiles();
 }
 
-
-// --- IntersectionObserver setup ---
-const observer = new IntersectionObserver(entries => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      const media = entry.target;
-      if (media.tagName === 'IMG') {
-        media.src = media.dataset.src;
-      } else if (media.tagName === 'VIDEO') {
-        if (media.children.length === 0) {
-          const source = document.createElement('source');
-          source.src = media.dataset.src;
-          source.type = 'video/mp4';
-          media.appendChild(source);
-          media.load();
-        }
-      }
-      observer.unobserve(media);
-    }
-  });
-}, {
-  root: null,
-  threshold: 0.1
-});
-
 function lazyLoadTiles() {
   tiles.forEach(tile => {
     const media = tile.querySelector('img, video');
-    if (media && media.dataset.src) {
-      observer.observe(media);
-    }
-  });
-}
+    const rect = tile.getBoundingClientRect();
+    if (
+      rect.right >= 0 &&
+      rect.left <= window.innerWidth &&
+      rect.bottom >= 0 &&
+      rect.top <= window.innerHeight
+    ) {
+      if (media.tagName === 'IMG') {
+        if (!media.src) {
+          media.src = media.dataset.src;
+        }
       } else if (media.tagName === 'VIDEO') {
         if (media.children.length === 0) {
           const source = document.createElement('source');
@@ -177,11 +158,10 @@ function lazyLoadTiles() {
       }
     } else {
       if (media.tagName === 'IMG') {
-      media.removeAttribute('src');
-    } else if (media.tagName === 'VIDEO') {
-      media.pause();
-      media.style.display = 'none';
-    }
+        media.removeAttribute('src');
+      } else if (media.tagName === 'VIDEO') {
+        media.innerHTML = '';
+      }
     }
   });
 }
