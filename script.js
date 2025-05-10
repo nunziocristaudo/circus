@@ -17,6 +17,10 @@ let velocityY = 0;
 
 let lastMove = 0;
 
+let zoomScale = 1;
+let pinchStartDist = 0;
+let initialZoom = 1;
+
 async function loadAvailableFiles() {
   try {
     const response = await fetch(workerURL);
@@ -157,7 +161,8 @@ function moveCamera(dx, dy) {
 
   cameraX += dx;
   cameraY += dy;
-  gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px)`;
+  gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${zoomScale})`;
+  gallery.style.transformOrigin = 'top left';
   updateTiles();
 }
 
@@ -223,8 +228,52 @@ document.addEventListener('touchmove', e => {
 });
 
 window.addEventListener('wheel', e => {
-  moveCamera(e.deltaX, e.deltaY);
-});
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault();
+    const scaleChange = e.deltaY < 0 ? 1.1 : 0.9;
+    zoomScale = Math.min(3, Math.max(0.5, zoomScale * scaleChange));
+    gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${zoomScale})`;
+  } else {
+    moveCamera(e.deltaX, e.deltaY);
+  }
+}, { passive: false });
+
+function getTouchDistance(touches) {
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.hypot(dx, dy);
+}
+document.addEventListener('touchstart', e => {
+  if (e.touches.length === 2) {
+    pinchStartDist = getTouchDistance(e.touches);
+    initialZoom = zoomScale;
+  } else {
+    isDragging = true;
+    const touch = e.touches[0];
+    dragStartX = touch.clientX;
+    dragStartY = touch.clientY;
+  }
+}, { passive: false });
+
+document.addEventListener('touchmove', e => {
+  if (e.touches.length === 2) {
+    e.preventDefault();
+    const newDist = getTouchDistance(e.touches);
+    const scaleChange = newDist / pinchStartDist;
+    zoomScale = Math.min(3, Math.max(0.5, initialZoom * scaleChange));
+    gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${zoomScale})`;
+  } else if (isDragging) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const dx = touch.clientX - dragStartX;
+    const dy = touch.clientY - dragStartY;
+    moveCamera(-dx, -dy);
+    velocityX = dx;
+    velocityY = dy;
+    dragStartX = touch.clientX;
+    dragStartY = touch.clientY;
+  }
+}, { passive: false });
 
 window.addEventListener('keydown', e => {
   const speed = 20;
@@ -243,7 +292,8 @@ async function init() {
   document.getElementById('loader').style.display = 'none';
   cameraX = 0;
   cameraY = 0;
-  gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px)`;
+  gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${zoomScale})`;
+  gallery.style.transformOrigin = 'top left';
   updateTiles();
   animate();
 }
