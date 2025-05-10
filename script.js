@@ -18,20 +18,28 @@ let velocityY = 0;
 let lastMove = 0;
 
 async function loadAvailableFiles() {
+  const workerURL = 'https://quiet-mouse-8001.flaxen-huskier-06.workers.dev/';
+  const localTilesURL = 'tiles.json';
+
   try {
-    const response = await fetch(workerURL);
-    const filenames = await response.json();
-    window.availableFiles = filenames.map(name => {
-      return {
-        url: baseURL + encodeURIComponent(name),
-        creator: "", // Optionally populate from a separate metadata source
-        link: "",     // Optional affiliate or creator link
-        tier: name.startsWith('featured_') ? 'featured' : name.startsWith('paid_') ? 'paid' : 'free'
-      };
-    });
-    console.log('Loaded files:', window.availableFiles);
-  } catch (error) {
-    console.error('Failed to load available files', error);
+    const [remoteRes, localRes] = await Promise.all([
+      fetch(workerURL).then(res => res.json()).catch(() => []),
+      fetch(localTilesURL).then(res => res.json()).catch(() => [])
+    ]);
+
+    const normalize = (item) =>
+      typeof item === 'string'
+        ? { url: item }
+        : item;
+
+    const remoteFiles = remoteRes.map(normalize);
+    const localFiles = localRes.map(normalize);
+
+    window.availableFiles = [...remoteFiles, ...localFiles];
+
+    console.log(`Loaded ${window.availableFiles.length} total tiles.`);
+  } catch (err) {
+    console.error('Error loading tile sources:', err);
     window.availableFiles = [];
   }
 }
