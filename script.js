@@ -69,7 +69,7 @@ function createPost(fileObj) {
   } else {
     media = document.createElement('img');
   }
-  media.dataset.src = fileObj.url;
+  media.dataset.src = baseURL + fileObj.url;
   frame.appendChild(media);
 
   const post = document.createElement('div');
