@@ -8,7 +8,6 @@ const workerURL = 'https://quiet-mouse-8001.flaxen-huskier-06.workers.dev/';
 
 let cameraX = 0;
 let cameraY = 0;
-let zoomScale = 1;
 
 let isDragging = false;
 let dragStartX = 0;
@@ -20,11 +19,19 @@ let lastMove = 0;
 
 async function loadAvailableFiles() {
   try {
-    const response = await fetch("tiles.json");
-    window.availableFiles = await response.json();
-    console.log("Loaded metadata-based tiles:", window.availableFiles);
+    const response = await fetch(workerURL);
+    const filenames = await response.json();
+    window.availableFiles = filenames.map(name => {
+      return {
+        url: baseURL + encodeURIComponent(name),
+        creator: "", // Optionally populate from a separate metadata source
+        link: "",     // Optional affiliate or creator link
+        tier: name.startsWith('featured_') ? 'featured' : name.startsWith('paid_') ? 'paid' : 'free'
+      };
+    });
+    console.log('Loaded files:', window.availableFiles);
   } catch (error) {
-    console.error("Failed to load tile metadata", error);
+    console.error('Failed to load available files', error);
     window.availableFiles = [];
   }
 }
@@ -63,12 +70,9 @@ function createPost(fileObj) {
   if (fileObj.tier === 'paid') post.classList.add('paid');
   post.appendChild(frame);
 
-  if (fileObj.link) {
-    post.style.cursor = 'pointer';
-    post.addEventListener('click', () => {
-      window.open(fileObj.link, '_blank');
-    });
-  }
+  post.addEventListener('click', () => {
+    openLightbox(fileObj);
+  });
 
   return post;
 }
@@ -77,11 +81,10 @@ function updateTiles() {
   const viewWidth = window.innerWidth;
   const viewHeight = window.innerHeight;
 
-  const effectiveTileSize = tileSize * zoomScale;
-  const startCol = Math.floor((cameraX - bufferTiles * effectiveTileSize) / tileSize);
-  const endCol = Math.ceil((cameraX + viewWidth + bufferTiles * effectiveTileSize) / tileSize);
-  const startRow = Math.floor((cameraY - bufferTiles * effectiveTileSize) / tileSize);
-  const endRow = Math.ceil((cameraY + viewHeight + bufferTiles * effectiveTileSize) / tileSize);
+  const startCol = Math.floor((cameraX - bufferTiles * tileSize) / tileSize);
+  const endCol = Math.ceil((cameraX + viewWidth + bufferTiles * tileSize) / tileSize);
+  const startRow = Math.floor((cameraY - bufferTiles * tileSize) / tileSize);
+  const endRow = Math.ceil((cameraY + viewHeight + bufferTiles * tileSize) / tileSize);
 
   const neededTiles = new Set();
 
@@ -154,7 +157,7 @@ function moveCamera(dx, dy) {
 
   cameraX += dx;
   cameraY += dy;
-  gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${zoomScale})`;
+  gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px)`;
   updateTiles();
 }
 
@@ -194,38 +197,19 @@ document.addEventListener('mousemove', e => {
 });
 
 document.addEventListener('touchstart', e => {
-  if (e.touches.length === 2) {
-    pinchStartDist = getTouchDistance(e.touches);
-    initialZoom = zoomScale;
-  } else {
-    isDragging = true;
-    const touch = e.touches[0];
-    dragStartX = touch.clientX;
-    dragStartY = touch.clientY;
-  }
+  e.preventDefault();
+  isDragging = true;
+  const touch = e.touches[0];
+  dragStartX = touch.clientX;
+  dragStartY = touch.clientY;
 });
 
 document.addEventListener('touchend', () => {
   isDragging = false;
 });
 
-function getTouchDistance(touches) {
-  const dx = touches[0].clientX - touches[1].clientX;
-  const dy = touches[0].clientY - touches[1].clientY;
-  return Math.hypot(dx, dy);
-}
-
-let pinchStartDist = 0;
-let initialZoom = 1;
-
 document.addEventListener('touchmove', e => {
-  if (e.touches.length === 2) {
-    e.preventDefault();
-    const newDist = getTouchDistance(e.touches);
-    const scaleChange = newDist / pinchStartDist;
-    zoomScale = Math.min(3, Math.max(0.5, initialZoom * scaleChange));
-    gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${zoomScale})`;
-  } else if (isDragging) {
+  if (isDragging) {
     e.preventDefault();
     const touch = e.touches[0];
     const dx = touch.clientX - dragStartX;
@@ -236,18 +220,11 @@ document.addEventListener('touchmove', e => {
     dragStartX = touch.clientX;
     dragStartY = touch.clientY;
   }
-}, { passive: false });
+});
 
 window.addEventListener('wheel', e => {
-  if (e.ctrlKey || e.metaKey) {
-    e.preventDefault();
-    const scaleChange = e.deltaY < 0 ? 1.1 : 0.9;
-    zoomScale = Math.min(3, Math.max(0.5, zoomScale * scaleChange));
-    gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${zoomScale})`;
-  } else {
-    moveCamera(e.deltaX, e.deltaY);
-  }
-}, { passive: false });
+  moveCamera(e.deltaX, e.deltaY);
+});
 
 window.addEventListener('keydown', e => {
   const speed = 20;
@@ -266,9 +243,80 @@ async function init() {
   document.getElementById('loader').style.display = 'none';
   cameraX = 0;
   cameraY = 0;
-  gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px) scale(${zoomScale})`;
+  gallery.style.transform = `translate(${-cameraX}px, ${-cameraY}px)`;
   updateTiles();
   animate();
 }
-
 init();
+
+const lightbox = document.getElementById('lightbox');
+const mediaContainer = document.getElementById('mediaContainer');
+const closeBtn = document.getElementById('closeBtn');
+const likeBox = document.querySelector('.like-box');
+const likeCountSpan = document.getElementById('likeCount');
+const heart = document.querySelector('.heart');
+const linkBox = document.getElementById('linkBox');
+
+let currentMediaUrl = '';
+
+function openLightbox(fileObj) {
+  currentMediaUrl = fileObj.url;
+  mediaContainer.innerHTML = '';
+  linkBox.innerHTML = '';
+
+  const ext = currentMediaUrl.toLowerCase().split('.').pop();
+  let media;
+  if (['mp4', 'webm', 'mov'].includes(ext)) {
+    media = document.createElement('video');
+    media.src = currentMediaUrl;
+    media.autoplay = true;
+    media.loop = true;
+    media.muted = false;
+    media.controls = true;
+    media.playsInline = true;
+  } else {
+    media = document.createElement('img');
+    media.src = currentMediaUrl;
+  }
+
+  mediaContainer.appendChild(media);
+  likeCountSpan.textContent = getLikes(currentMediaUrl);
+  heart.textContent = '♡';
+  lightbox.classList.remove('hidden');
+
+  if (fileObj.link) {
+    const link = document.createElement('a');
+    link.href = fileObj.link;
+    link.textContent = 'Learn more or support this creator →';
+    link.target = '_blank';
+    link.rel = 'noopener';
+    linkBox.appendChild(link);
+  }
+}
+
+function closeLightbox() {
+  lightbox.classList.add('hidden');
+  mediaContainer.innerHTML = '';
+  linkBox.innerHTML = '';
+}
+
+function getLikes(url) {
+  return parseInt(localStorage.getItem(`likes_${url}`) || '0', 10);
+}
+
+function incrementLikes(url) {
+  const current = getLikes(url);
+  const updated = current + 1;
+  localStorage.setItem(`likes_${url}`, updated);
+  return updated;
+}
+
+// Hook up modal close and like button
+closeBtn.addEventListener('click', closeLightbox);
+heart.addEventListener('click', () => {
+  const updated = incrementLikes(currentMediaUrl);
+  likeCountSpan.textContent = updated;
+  heart.textContent = '❤️';
+  heart.classList.add('clicked');
+  setTimeout(() => heart.classList.remove('clicked'), 400);
+});
