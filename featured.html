@@ -2,41 +2,88 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Featured Tiles – TinySquares</title>
+  <title>Showcase Your NFT – TinySquares</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Showcase your NFT in a public digital gallery. Submit your NFT art, video, or creative token and be featured in the TinySquares grid.">
+  <meta name="keywords" content="NFT gallery, showcase your NFT, submit NFT, TinySquares, NFT art, Web3 creative, digital gallery, blockchain art">
+  <meta name="robots" content="index, follow">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Showcase Your NFT – TinySquares">
+  <meta property="og:description" content="Submit your NFT to TinySquares and get featured in a global creative NFT grid.">
+  <meta property="og:url" content="https://tinysquares.io/featured.html">
+  <meta property="og:image" content="https://tinysquares.io/preview.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Showcase Your NFT – TinySquares">
+  <meta name="twitter:description" content="TinySquares is a living gallery for NFT art and video. Submit your creative token and be featured.">
+  <meta name="twitter:image" content="https://tinysquares.io/preview.jpg">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#000000">
+  <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="favicon.jpeg" type="image/jpeg">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <style>
     #topbar.hide, footer.hide { display: none !important; }
+    .hero { text-align: center; padding: 3rem 1rem 2rem; max-width: 800px; margin: auto; }
+    .hero h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    .hero p { font-size: 1.1rem; color: #ccc; }
+    .cta-button { display: inline-block; margin-top: 1.5rem; padding: 0.75rem 1.25rem; background: gold; color: black; font-weight: bold; border-radius: 6px; text-decoration: none; }
+    .nft-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; padding: 2rem; max-width: 1000px; margin: auto; }
+    .nft-tile { background: #111; padding: 1rem; border-radius: 8px; text-align: center; }
+    .nft-tile img, .nft-tile video { width: 100%; height: auto; border-radius: 6px; }
+    .nft-meta { margin-top: 0.5rem; font-size: 0.9rem; color: #ccc; }
+    .nft-meta a { color: gold; font-weight: bold; text-decoration: none; }
+    .submit-nft-prompt { text-align: center; margin: 4rem auto 6rem; max-width: 800px; padding: 0 1rem; }
   </style>
 </head>
+
 <body oncontextmenu="return false">
   <header id="topbar">
     <nav>
       <a href="index.html">Home</a>
       <a href="submit.html">Submit a Tile</a>
-      <a href="featured.html">Featured</a>
+      <a href="featured.html">Showcase Your NFT</a>
       <a href="about.html">About</a>
     </nav>
   </header>
 
-  <main style="padding: 2rem; max-width: 900px; margin: auto;">
-    <h1>Featured Tiles</h1>
-    <p>
-      These are some of the most creative and inspiring submissions. 
-      Featured tiles enjoy top placement and priority in the public gallery.
-    </p>
+  <main>
+    <section class="hero">
+      <h1>Showcase Your NFT</h1>
+      <p>Submit your NFT and get featured in our global grid of creativity.</p>
+      <a href="submit.html" class="cta-button">Submit Your NFT →</a>
+    </section>
 
-    <section id="featuredGallery" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; margin-top: 2rem;">
-      <!-- Replace these samples with actual featured tiles -->
-      <div class="post featured"><img src="sample1.webp" alt="Sample 1"></div>
-      <div class="post featured"><img src="sample2.webp" alt="Sample 2"></div>
-      <div class="post featured"><img src="sample3.webp" alt="Sample 3"></div>
-      <div class="post featured"><video src="sample4.mp4" autoplay loop muted></video></div>
+    <section class="nft-gallery">
+      <div class="nft-tile">
+        <img src="sample1.webp" alt="NFT Title 1">
+        <div class="nft-meta">
+          <h4>“Dreamscape #1”</h4>
+          <p>by @blockartsy</p>
+          <a href="https://opensea.io/assets/" target="_blank">View on OpenSea</a>
+        </div>
+      </div>
+      <div class="nft-tile">
+        <video src="sample2.mp4" autoplay loop muted></video>
+        <div class="nft-meta">
+          <h4>“Ethereal Motion”</h4>
+          <p>by @motionmint</p>
+          <a href="https://opensea.io/assets/" target="_blank">View on OpenSea</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="submit-nft-prompt">
+      <h2>Submit Your NFT</h2>
+      <p>Want your work featured here? Submit your NFT using the form below.</p>
+      <iframe src="https://tally.so/embed/wxyz123" width="100%" height="500" frameborder="0"></iframe>
     </section>
   </main>
 
   <footer>
-    <p>Want to be featured? <a href="submit.html">Submit your tile</a> and select the Featured tier.</p>
+    <p>© TinySquares 2025 – <a href="submit.html">Submit Your NFT</a></p>
   </footer>
 
   <script>
