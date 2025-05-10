@@ -46,11 +46,7 @@
       Want your work on TinySquares? <a href="submit.html">Submit a tile</a>.
     </p>
   </footer>
-
-  <!-- core behaviour -->
   <script src="script.js"></script>
-
-  <!-- header/footer hide behaviour -->
   <script>
     let hideTimeout;
     function showBars() {
@@ -67,8 +63,6 @@
     window.addEventListener('touchmove', showBars);
     showBars();
   </script>
-
-  <!-- mobile add-to-home-screen prompt -->
   <script>
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     const shown = localStorage.getItem('a2hsPromptShown');
