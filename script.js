@@ -3,7 +3,7 @@ const tileSize = 150;
 const bufferTiles = 1;
 let tiles = new Map();
 
-const baseURL = '';
+const baseURL = 'https://dev.tinysquares.io/';
 const workerURL = 'https://quiet-mouse-8001.flaxen-huskier-06.workers.dev/';
 const clipAPI = 'https://devtiny-clip-api.hf.space/embed';
 
