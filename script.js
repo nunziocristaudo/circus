@@ -72,30 +72,25 @@ function update() {
   requestAnimationFrame(update);
 }
 
-function renderTiles() {
+function renderTiles(tilesToShow = allTiles) {
   gallery.innerHTML = '';
-  const viewport = gallery.getBoundingClientRect();
-  const cols = Math.ceil(viewport.width / tileSize) + bufferTiles * 2;
-  const rows = Math.ceil(viewport.height / tileSize) + bufferTiles * 2;
-  const offsetX = Math.floor(cameraX / tileSize) - bufferTiles;
-  const offsetY = Math.floor(cameraY / tileSize) - bufferTiles;
+  tiles.clear();
 
-  for (let x = 0; x < cols; x++) {
-    for (let y = 0; y < rows; y++) {
-      const tileX = x + offsetX;
-      const tileY = y + offsetY;
-      const key = `${tileX},${tileY}`;
+  tilesToShow.forEach((tile, i) => {
+    const div = document.createElement('div');
+    div.className = 'tile';
+    div.style.left = `${(i % 10) * tileSize}px`;
+    div.style.top = `${Math.floor(i / 10) * tileSize}px`;
 
-      if (!tiles.has(key)) {
-        const tile = document.createElement('div');
-        tile.className = 'tile';
-        tile.style.left = `${tileX * tileSize}px`;
-        tile.style.top = `${tileY * tileSize}px`;
-        gallery.appendChild(tile);
-        tiles.set(key, tile);
-      }
-    }
-  }
+    const media = document.createElement('img');
+    media.src = baseURL + tile.url;
+    media.loading = 'lazy';
+    media.width = tileSize;
+    media.height = tileSize;
+    div.appendChild(media);
+
+    gallery.appendChild(div);
+  });
 }
 
 // Tag matching using cosine similarity
