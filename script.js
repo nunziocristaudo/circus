@@ -76,19 +76,20 @@ function renderTiles(tilesToShow = allTiles) {
   gallery.innerHTML = '';
   tiles.clear();
 
-  tilesToShow.forEach((tile, i) => {
+  // Shuffle tilesToShow
+  const shuffled = [...tilesToShow].sort(() => Math.random() - 0.5);
+
+  shuffled.forEach((tile) => {
     const div = document.createElement('div');
     div.className = 'tile';
-    div.style.left = `${(i % 10) * tileSize}px`;
-    div.style.top = `${Math.floor(i / 10) * tileSize}px`;
 
     const media = document.createElement('img');
     media.src = baseURL + tile.url;
     media.loading = 'lazy';
     media.width = tileSize;
     media.height = tileSize;
-    div.appendChild(media);
 
+    div.appendChild(media);
     gallery.appendChild(div);
   });
 }
