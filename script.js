@@ -25,6 +25,7 @@ fetch('tiles.json')
   .then(res => res.json())
   .then(data => {
     allTiles = data;
+    renderTiles();
     init();
   });
 
@@ -158,4 +159,66 @@ function debounce(fn, delay) {
     clearTimeout(timer);
     timer = setTimeout(() => fn.apply(this, args), delay);
   };
+}
+async function onSearch(e) {
+  const query = e.target.value.trim();
+  if (!query) {
+    renderTiles();
+    return;
+  }
+
+  try {
+    const res = await fetch(clipAPI, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: query })
+    });
+
+    const { embedding } = await res.json();
+
+    const similarities = allTiles.map(tile => {
+      const dot = tile.embedding.reduce((sum, v, i) => sum + v * embedding[i], 0);
+      const normA = Math.sqrt(tile.embedding.reduce((sum, v) => sum + v * v, 0));
+      const normB = Math.sqrt(embedding.reduce((sum, v) => sum + v * v, 0));
+      const similarity = dot / (normA * normB);
+      return { ...tile, similarity };
+    });
+
+    similarities.sort((a, b) => b.similarity - a.similarity);
+    renderTiles(similarities.slice(0, 100)); // show top 100
+
+  } catch (err) {
+    console.error('Error fetching embedding:', err);
+  }
+}
+async function onSearch(e) {
+  const query = e.target.value.trim();
+  if (!query) {
+    renderTiles();
+    return;
+  }
+
+  try {
+    const res = await fetch(clipAPI, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: query })
+    });
+
+    const { embedding } = await res.json();
+
+    const similarities = allTiles.map(tile => {
+      const dot = tile.embedding.reduce((sum, v, i) => sum + v * embedding[i], 0);
+      const normA = Math.sqrt(tile.embedding.reduce((sum, v) => sum + v * v, 0));
+      const normB = Math.sqrt(embedding.reduce((sum, v) => sum + v * v, 0));
+      const similarity = dot / (normA * normB);
+      return { ...tile, similarity };
+    });
+
+    similarities.sort((a, b) => b.similarity - a.similarity);
+    renderTiles(similarities.slice(0, 100)); // show top 100
+
+  } catch (err) {
+    console.error('Error fetching embedding:', err);
+  }
 }
