@@ -16,9 +16,11 @@ body {
 }
 
 #gallery {
-  position: relative;
+  position: absolute;
   width: 100%;
   height: 100%;
+  transform-origin: top left;
+  cursor: grab;
 }
 
 .post {
