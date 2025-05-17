@@ -1,49 +1,41 @@
 const gallery = document.getElementById('gallery');
 const tileSize = 150;
-const bufferTiles = 1;
 let tiles = new Map();
 
 const baseURL = 'https://dev.tinysquares.io/';
-const workerURL = 'https://quiet-mouse-8001.flaxen-huskier-06.workers.dev/';
 const clipAPI = 'https://devtiny-clip-api.hf.space/embed';
 
 let cameraX = 0;
 let cameraY = 0;
-
 let isDragging = false;
 let dragStartX = 0;
 let dragStartY = 0;
 let velocityX = 0;
 let velocityY = 0;
 
-let lastMove = 0;
-
 let allTiles = [];
 
-// Load tile metadata
 fetch('tiles.json')
   .then(res => res.json())
   .then(data => {
     allTiles = data;
-    renderTiles();
+    renderTiles(shuffle([...allTiles])); // show random 100 on load
     init();
   });
 
-// Set up canvas dragging and momentum
+// Dragging
 function init() {
   requestAnimationFrame(update);
 
-  window.addEventListener('mousedown', (e) => {
+  window.addEventListener('mousedown', e => {
     isDragging = true;
     dragStartX = e.clientX - cameraX;
     dragStartY = e.clientY - cameraY;
   });
 
-  window.addEventListener('mouseup', () => {
-    isDragging = false;
-  });
+  window.addEventListener('mouseup', () => isDragging = false);
 
-  window.addEventListener('mousemove', (e) => {
+  window.addEventListener('mousemove', e => {
     if (isDragging) {
       const newCameraX = e.clientX - dragStartX;
       const newCameraY = e.clientY - dragStartY;
@@ -60,7 +52,7 @@ function init() {
   }
 }
 
-// Rendering loop
+// Animate loop
 function update() {
   if (!isDragging) {
     cameraX += velocityX;
@@ -69,62 +61,15 @@ function update() {
     velocityY *= 0.9;
   }
 
-  renderTiles();
   requestAnimationFrame(update);
 }
 
-function renderTiles(tilesToShow = allTiles) {
+// Render
+function renderTiles(tilesToShow) {
   gallery.innerHTML = '';
   tiles.clear();
 
-  // Shuffle tilesToShow
-  const shuffled = [...tilesToShow].sort(() => Math.random() - 0.5);
-
-  shuffled.forEach((tile) => {
-    const div = document.createElement('div');
-    div.className = 'tile';
-
-    const media = document.createElement('img');
-    media.src = baseURL + tile.url;
-    media.loading = 'lazy';
-    media.width = tileSize;
-    media.height = tileSize;
-
-    div.appendChild(media);
-    gallery.appendChild(div);
-  });
-}
-
-// Tag matching using cosine similarity
-async function onSearch(e) {
-  const query = e.target.value.trim();
-  if (!query) {
-    renderTiles();
-    return;
-  }
-
-  const response = await fetch(clipAPI, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: query })
-  });
-
-  const result = await response.json();
-  const inputEmbedding = result.embedding;
-  const matches = allTiles
-    .map(tile => {
-      return {
-        ...tile,
-        similarity: cosineSimilarity(inputEmbedding, tile.embedding)
-      };
-    })
-    .sort((a, b) => b.similarity - a.similarity)
-    .slice(0, 50);
-
-  gallery.innerHTML = '';
-  tiles.clear();
-
-  matches.forEach((tile, i) => {
+  tilesToShow.forEach((tile, i) => {
     const div = document.createElement('div');
     div.className = 'tile';
     div.style.left = `${(i % 10) * tileSize}px`;
@@ -141,84 +86,52 @@ async function onSearch(e) {
   });
 }
 
-// Cosine similarity helper
-function cosineSimilarity(vecA, vecB) {
-  let dot = 0, normA = 0, normB = 0;
-  for (let i = 0; i < vecA.length; i++) {
-    dot += vecA[i] * vecB[i];
-    normA += vecA[i] * vecA[i];
-    normB += vecB[i] * vecB[i];
+// Search
+async function onSearch(e) {
+  const query = e.target.value.trim();
+  if (!query) {
+    renderTiles(shuffle([...allTiles]).slice(0, 100));
+    return;
   }
-  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+
+  try {
+    const res = await fetch(clipAPI, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: query })
+    });
+
+    const { embedding } = await res.json();
+
+    const matches = allTiles.map(tile => {
+      const dot = tile.embedding.reduce((sum, v, i) => sum + v * embedding[i], 0);
+      const normA = Math.sqrt(tile.embedding.reduce((sum, v) => sum + v * v, 0));
+      const normB = Math.sqrt(embedding.reduce((sum, v) => sum + v * v, 0));
+      const similarity = dot / (normA * normB);
+      return { ...tile, similarity };
+    });
+
+    matches.sort((a, b) => b.similarity - a.similarity);
+    renderTiles(matches.slice(0, 100));
+  } catch (err) {
+    console.error('❌ Error fetching embedding:', err);
+  }
 }
 
-// Debounce helper
+// Shuffle helper
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// Debounce
 function debounce(fn, delay) {
   let timer;
   return function (...args) {
     clearTimeout(timer);
     timer = setTimeout(() => fn.apply(this, args), delay);
   };
-}
-async function onSearch(e) {
-  const query = e.target.value.trim();
-  if (!query) {
-    renderTiles();
-    return;
-  }
-
-  try {
-    const res = await fetch(clipAPI, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: query })
-    });
-
-    const { embedding } = await res.json();
-
-    const similarities = allTiles.map(tile => {
-      const dot = tile.embedding.reduce((sum, v, i) => sum + v * embedding[i], 0);
-      const normA = Math.sqrt(tile.embedding.reduce((sum, v) => sum + v * v, 0));
-      const normB = Math.sqrt(embedding.reduce((sum, v) => sum + v * v, 0));
-      const similarity = dot / (normA * normB);
-      return { ...tile, similarity };
-    });
-
-    similarities.sort((a, b) => b.similarity - a.similarity);
-    renderTiles(similarities.slice(0, 100)); // show top 100
-
-  } catch (err) {
-    console.error('Error fetching embedding:', err);
-  }
-}
-async function onSearch(e) {
-  const query = e.target.value.trim();
-  if (!query) {
-    renderTiles();
-    return;
-  }
-
-  try {
-    const res = await fetch(clipAPI, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: query })
-    });
-
-    const { embedding } = await res.json();
-
-    const similarities = allTiles.map(tile => {
-      const dot = tile.embedding.reduce((sum, v, i) => sum + v * embedding[i], 0);
-      const normA = Math.sqrt(tile.embedding.reduce((sum, v) => sum + v * v, 0));
-      const normB = Math.sqrt(embedding.reduce((sum, v) => sum + v * v, 0));
-      const similarity = dot / (normA * normB);
-      return { ...tile, similarity };
-    });
-
-    similarities.sort((a, b) => b.similarity - a.similarity);
-    renderTiles(similarities.slice(0, 100)); // show top 100
-
-  } catch (err) {
-    console.error('Error fetching embedding:', err);
-  }
 }
