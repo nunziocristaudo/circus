@@ -3,6 +3,7 @@ const tileSize = 150;
 let tiles = new Map();
 
 const baseURL = 'https://dev.tinysquares.io/';
+const workerURL = 'https://quiet-mouse-8001.flaxen-huskier-06.workers.dev/';
 const clipAPI = 'https://devtiny-clip-api.hf.space/embed';
 
 let cameraX = 0;
@@ -12,137 +13,129 @@ let dragStartX = 0;
 let dragStartY = 0;
 let velocityX = 0;
 let velocityY = 0;
+let lastFrameTime = performance.now();
 
+let embeddingData = [];
 let allTiles = [];
 
-fetch('tiles.json')
-  .then(res => res.json())
-  .then(data => {
+const loadTilesJSON = async () => {
+    const response = await fetch('tiles.json');
+    const data = await response.json();
     allTiles = data;
-    renderTiles(shuffle([...allTiles])); // show random 100 on load
-    init();
-  });
+    embeddingData = data.map(t => ({ url: t.url, embedding: t.embedding, tier: t.tier || "standard", link: t.link || "" }));
+};
 
-// Dragging
-function init() {
-  requestAnimationFrame(update);
+const cosineSimilarity = (a, b) => {
+    const dot = a.reduce((sum, val, i) => sum + val * b[i], 0);
+    const magA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
+    const magB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));
+    return dot / (magA * magB);
+};
 
-  window.addEventListener('mousedown', e => {
-    isDragging = true;
-    dragStartX = e.clientX - cameraX;
-    dragStartY = e.clientY - cameraY;
-  });
+const renderTiles = (tileList) => {
+    gallery.innerHTML = '';
+    const cols = Math.ceil(window.innerWidth / tileSize);
+    const rows = Math.ceil(window.innerHeight / tileSize);
+    let index = 0;
+    for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+            if (index >= tileList.length) return;
+            const tile = tileList[index++];
+            const el = document.createElement('div');
+            el.className = 'post fade-in ' + (tile.tier === 'featured' ? 'featured' : tile.tier === 'paid' ? 'paid' : '');
+            el.style.left = `${x * tileSize}px`;
+            el.style.top = `${y * tileSize}px`;
+            el.style.width = `${tileSize}px`;
+            el.style.height = `${tileSize}px`;
 
-  window.addEventListener('mouseup', () => isDragging = false);
+            const frame = document.createElement('div');
+            frame.className = 'frame';
 
-  window.addEventListener('mousemove', e => {
-    if (isDragging) {
-      const newCameraX = e.clientX - dragStartX;
-      const newCameraY = e.clientY - dragStartY;
-      velocityX = newCameraX - cameraX;
-      velocityY = newCameraY - cameraY;
-      cameraX = newCameraX;
-      cameraY = newCameraY;
+            const mediaURL = baseURL + tile.url;
+            if (tile.url.endsWith('.mp4')) {
+                const vid = document.createElement('video');
+                vid.src = mediaURL;
+                vid.autoplay = true;
+                vid.loop = true;
+                vid.muted = true;
+                vid.playsInline = true;
+                vid.loading = "lazy";
+                frame.appendChild(vid);
+            } else {
+                const img = document.createElement('img');
+                img.src = mediaURL;
+                img.loading = "lazy";
+                frame.appendChild(img);
+            }
+
+            el.appendChild(frame);
+            gallery.appendChild(el);
+            requestAnimationFrame(() => el.classList.add('show'));
+        }
     }
-  });
+};
 
-  const searchInput = document.getElementById('searchInput');
-  if (searchInput) {
-    searchInput.addEventListener('input', debounce(onSearch, 400));
-  }
-}
+const fetchSearchEmbedding = async (query) => {
+    const response = await fetch(clipAPI, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: query })
+    });
+    return await response.json();
+};
 
-// Animate loop
-function update() {
-  if (!isDragging) {
-    cameraX += velocityX;
-    cameraY += velocityY;
+const performSearch = async (query) => {
+    const { embedding } = await fetchSearchEmbedding(query);
+    const ranked = embeddingData
+        .map(tile => ({
+            ...tile,
+            score: cosineSimilarity(embedding, tile.embedding)
+        }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 100);
+    renderTiles(ranked);
+};
+
+document.getElementById('searchInput').addEventListener('input', e => {
+    const query = e.target.value.trim();
+    if (query.length >= 3) {
+        performSearch(query);
+    } else {
+        renderTiles(embeddingData.sort(() => Math.random() - 0.5));
+    }
+});
+
+const animate = (time) => {
+    const dt = (time - lastFrameTime) / 1000;
+    lastFrameTime = time;
+    cameraX += velocityX * dt;
+    cameraY += velocityY * dt;
     velocityX *= 0.9;
     velocityY *= 0.9;
-  }
+    gallery.style.transform = `translate(${cameraX}px, ${cameraY}px)`;
+    requestAnimationFrame(animate);
+};
 
-  requestAnimationFrame(update);
-}
+gallery.addEventListener('mousedown', e => {
+    isDragging = true;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+});
 
-// Render
-function renderTiles(tilesToShow = allTiles) {
-  gallery.innerHTML = '';
-  tiles.clear();
+document.addEventListener('mouseup', () => isDragging = false);
 
-  const cols = Math.ceil(window.innerWidth / tileSize) + bufferTiles * 2;
-  const rows = Math.ceil(window.innerHeight / tileSize) + bufferTiles * 2;
+document.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    velocityX = e.clientX - dragStartX;
+    velocityY = e.clientY - dragStartY;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+});
 
-  const startX = Math.floor(-cameraX / tileSize) - bufferTiles;
-  const startY = Math.floor(-cameraY / tileSize) - bufferTiles;
+window.addEventListener('resize', () => renderTiles(embeddingData.sort(() => Math.random() - 0.5)));
 
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
-      const i = (row + startY) * 1000 + (col + startX); // a fake global index
-      const tile = tilesToShow[i % tilesToShow.length]; // cycle through tiles
-
-      const div = document.createElement('div');
-      div.className = 'tile';
-      div.style.left = `${(col + startX) * tileSize + cameraX}px`;
-      div.style.top = `${(row + startY) * tileSize + cameraY}px`;
-
-      const media = document.createElement('img');
-      media.src = baseURL + tile.url;
-      media.loading = 'lazy';
-      media.width = tileSize;
-      media.height = tileSize;
-
-      div.appendChild(media);
-      gallery.appendChild(div);
-    }
-  }
-}
-
-// Search
-async function onSearch(e) {
-  const query = e.target.value.trim();
-  if (!query) {
-    renderTiles(shuffle([...allTiles]).slice(0, 100));
-    return;
-  }
-
-  try {
-    const res = await fetch(clipAPI, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: query })
-    });
-
-    const { embedding } = await res.json();
-
-    const matches = allTiles.map(tile => {
-      const dot = tile.embedding.reduce((sum, v, i) => sum + v * embedding[i], 0);
-      const normA = Math.sqrt(tile.embedding.reduce((sum, v) => sum + v * v, 0));
-      const normB = Math.sqrt(embedding.reduce((sum, v) => sum + v * v, 0));
-      const similarity = dot / (normA * normB);
-      return { ...tile, similarity };
-    });
-
-    matches.sort((a, b) => b.similarity - a.similarity);
-    renderTiles(matches.slice(0, 100));
-  } catch (err) {
-    console.error('❌ Error fetching embedding:', err);
-  }
-}
-
-// Shuffle helper
-function shuffle(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-// Debounce
-function debounce(fn, delay) {
-  let timer;
-  return function (...args) {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn.apply(this, args), delay);
-  };
-}
+(async () => {
+    await loadTilesJSON();
+    renderTiles(embeddingData.sort(() => Math.random() - 0.5));
+    requestAnimationFrame(animate);
+})();
