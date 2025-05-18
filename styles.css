@@ -23,6 +23,13 @@ body {
   cursor: grab;
 }
 
+.tile {
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  overflow: hidden;
+}
+
 .post {
   position: absolute;
   width: 150px;
