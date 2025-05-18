@@ -1,35 +1,36 @@
+
 :root {
-  --bg-color: black;
-  --text-color: white;
+  --bg-color: #000;
+  --text-color: #fff;
   --featured-color: gold;
   --paid-color: dodgerblue;
 }
 
-body {
+* {
   margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
   background-color: var(--bg-color);
   color: var(--text-color);
   font-family: Arial, sans-serif;
+}
+
+#viewport {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
   overflow: hidden;
-  height: 100vh;
-  touch-action: none;
+  z-index: 0;
 }
 
 #gallery {
   position: absolute;
-  width: 100%;
-  height: 100%;
   transform-origin: top left;
-  cursor: grab;
-}
-
-.tile {
-  position: absolute;
-  width: 150px;
-  height: 150px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1); 
-  box-sizing: border-box;
 }
 
 .post {
@@ -37,7 +38,7 @@ body {
   width: 150px;
   height: 150px;
   overflow: hidden;
-  border: 0.1px solid rgba(255, 255, 255, 0.01);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   box-sizing: border-box;
   cursor: pointer;
 }
@@ -69,9 +70,10 @@ body {
   height: 100%;
   object-fit: cover;
   object-position: center;
-  events: none;
+  pointer-events: none;
   user-select: none;
   transition: transform 0.3s ease, opacity 0.3s ease;
+  background: #111;
 }
 
 .post:hover .frame img,
@@ -89,6 +91,23 @@ body {
   transform: scale(1);
 }
 
+#searchInput {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 14px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background-color: #000;
+  color: #fff;
+  z-index: 999;
+}
+#searchInput::placeholder {
+  color: #666;
+}
+
 #loader {
   position: fixed;
   top: 50%;
@@ -98,95 +117,6 @@ body {
   color: var(--text-color);
 }
 
-@media (max-width: 768px) {
-  .post {
-    width: 33.333vw;
-    height: 33.333vw;
-  }
-}
-
-#lightbox {
-  position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  flex-direction: column;
-  border-radius: 12px;
-  padding: 1rem;
-}
-
-#lightbox.hidden {
-  display: none;
-}
-
-.lightbox-content {
-  position: relative;
-  width: 75vw;
-  height: 75vh;
-  max-width: 100%;
-  max-height: 100%;
-}
-
-#closeBtn {
-  position: absolute;
-  top: -40px;
-  right: 0;
-  font-size: 2rem;
-  background: none;
-  color: white;
-  border: none;
-  cursor: pointer;
-}
-
-.like-box {
-  position: absolute;
-  top: -40px;
-  left: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
-  font-size: 1.5rem;
-  color: white;
-  user-select: none;
-}
-
-#mediaContainer img,
-#mediaContainer video {
-  max-width: 100%;
-  max-height: 100%;
-}
-
-#linkBox {
-  margin-top: 1rem;
-  font-size: 1rem;
-  text-align: center;
-}
-
-#linkBox a {
-  color: var(--paid-color);
-  text-decoration: none;
-  font-weight: bold;
-}
-
-.heart.clicked {
-  animation: pop 0.4s ease;
-  color: red;
-}
-
-@keyframes pop {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.4); }
-  100% { transform: scale(1); }
-}
-
-.heart {
-  transition: transform 0.2s ease, color 0.2s ease;
-}
-
 #topbar {
   position: fixed;
   top: 0;
@@ -194,7 +124,7 @@ body {
   background: rgba(0, 0, 0, 0.85);
   color: white;
   padding: 0.35rem 0.75rem;
-  font-size: 0.85rem; /* slightly smaller text */
+  font-size: 0.85rem;
   z-index: 10000;
   display: flex;
   justify-content: center;
@@ -226,51 +156,15 @@ footer a {
   text-decoration: none;
 }
 
-a {
-  color: #FFD700;
-  text-decoration: none;
-  font-weight: bold;
+@media (max-width: 768px) {
+  .post {
+    width: 33.333vw;
+    height: 33.333vw;
+  }
 }
 
-a:hover {
-  text-decoration: underline;
-  color: #ffffff;
-}
-
-body.scrollable {
-  overflow-y: auto;
-  height: auto;
-  touch-action: auto;
-}
-
-#viewport {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  overflow: hidden;
-  z-index: 0;
-}
-
-#gallery {
-  position: absolute;
-  transform-origin: top left;
-}
-
-#searchInput {
-  position: fixed;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 10px 14px;
-  font-size: 16px;
-  border-radius: 8px;
-  border: 1px solid #333;
-  background-color: #000;
-  color: #fff;
-  z-index: 999;
-}
-#searchInput::placeholder {
-  color: #666;
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
 }
