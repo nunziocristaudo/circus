@@ -1,6 +1,6 @@
 const gallery = document.getElementById("gallery");
 const tileSize = 150;
-const buffer = 2; // tiles outside viewport
+const buffer = 2;
 const baseURL = "https://dev.tinysquares.io/";
 const workerURL = "https://quiet-mouse-8001.flaxen-huskier-06.workers.dev/";
 const clipAPI = "https://devtiny-clip-api.hf.space/embed";
@@ -105,12 +105,26 @@ window.addEventListener("mousemove", e => {
 
 window.addEventListener("mouseup", () => isDragging = false);
 
+// Touch support
+window.addEventListener("touchstart", e => {
+  isDragging = true;
+  dragStartX = e.touches[0].clientX;
+  dragStartY = e.touches[0].clientY;
+});
+window.addEventListener("touchmove", e => {
+  if (!isDragging) return;
+  velocityX = dragStartX - e.touches[0].clientX;
+  velocityY = dragStartY - e.touches[0].clientY;
+  dragStartX = e.touches[0].clientX;
+  dragStartY = e.touches[0].clientY;
+});
+window.addEventListener("touchend", () => isDragging = false);
+
 window.addEventListener("resize", () => {
   tiles.forEach(el => gallery.removeChild(el));
   tiles.clear();
 });
 
-// Search feature
 const input = document.createElement("input");
 input.type = "text";
 input.placeholder = "Search...";
