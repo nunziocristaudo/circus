@@ -65,25 +65,36 @@ function update() {
 }
 
 // Render
-function renderTiles(tilesToShow) {
+function renderTiles(tilesToShow = allTiles) {
   gallery.innerHTML = '';
   tiles.clear();
 
-  tilesToShow.forEach((tile, i) => {
-    const div = document.createElement('div');
-    div.className = 'tile';
-    div.style.left = `${(i % 10) * tileSize}px`;
-    div.style.top = `${Math.floor(i / 10) * tileSize}px`;
+  const cols = Math.ceil(window.innerWidth / tileSize) + bufferTiles * 2;
+  const rows = Math.ceil(window.innerHeight / tileSize) + bufferTiles * 2;
 
-    const media = document.createElement('img');
-    media.src = baseURL + tile.url;
-    media.loading = 'lazy';
-    media.width = tileSize;
-    media.height = tileSize;
-    div.appendChild(media);
+  const startX = Math.floor(-cameraX / tileSize) - bufferTiles;
+  const startY = Math.floor(-cameraY / tileSize) - bufferTiles;
 
-    gallery.appendChild(div);
-  });
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const i = (row + startY) * 1000 + (col + startX); // a fake global index
+      const tile = tilesToShow[i % tilesToShow.length]; // cycle through tiles
+
+      const div = document.createElement('div');
+      div.className = 'tile';
+      div.style.left = `${(col + startX) * tileSize + cameraX}px`;
+      div.style.top = `${(row + startY) * tileSize + cameraY}px`;
+
+      const media = document.createElement('img');
+      media.src = baseURL + tile.url;
+      media.loading = 'lazy';
+      media.width = tileSize;
+      media.height = tileSize;
+
+      div.appendChild(media);
+      gallery.appendChild(div);
+    }
+  }
 }
 
 // Search
